@@ -18,6 +18,7 @@ import ProGate from './components/ProGate'
 import ZenMode from './components/ZenMode'
 import CommandPalette from './components/CommandPalette'
 import Layout from './components/Layout'
+import Confetti from './components/Confetti'
 import { useAuth } from './contexts/AuthContext'
 import { useTheme } from './contexts/ThemeContext'
 import { useTranslation } from './contexts/LanguageContext'
@@ -88,6 +89,7 @@ function App() {
     <>
       <CustomCursor />
       <ZenMode />
+      <Confetti />
 
       <div key={pageToRender} className="page-transition">
         {pageToRender === 'landing' && <LandingPage onNavigate={navigateTo} />}

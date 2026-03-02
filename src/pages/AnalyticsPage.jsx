@@ -109,20 +109,34 @@ const AnalyticsPage = ({ onNavigate }) => {
     { name: 'Pending', value: taskStats.pending, color: '#E5E0D5' },
   ]
 
+  const bestDay = [...weeklyData].sort((a, b) => b.hours - a.hours)[0]
+  const avgHours = (weeklyData.reduce((a, b) => a + b.hours, 0) / 7).toFixed(1)
+
   return (
-    <>
+    <div className="analytics-main">
+      <div style={{ padding: '0 0.5rem', marginBottom: '2rem' }}>
+        <h1 style={{ fontFamily: 'var(--font-serif)', fontSize: '2rem', color: 'var(--text-primary)', margin: 0 }}>Performance Insights</h1>
+        <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.12em', fontWeight: 700, marginTop: '0.25rem' }}>Track your productivity & growth</p>
+      </div>
+
       {/* Hero: Study Heatmap */}
-      <StudyHeatmap />
+      <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '32px', padding: '1.5rem', marginBottom: '2.5rem', overflow: 'hidden' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', padding: '0 0.5rem' }}>
+          <h3 style={{ fontFamily: 'var(--font-serif)', fontSize: '1.1rem', margin: 0 }}>Activity Heatmap</h3>
+          <span style={{ fontSize: '0.65rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)', fontWeight: 800 }}>Past Year Progress</span>
+        </div>
+        <StudyHeatmap />
+      </div>
 
       {/* KPI Row */}
       <div className="kpi-row">
         <div className="kpi-card">
           <div className="kpi-value">{totalHours}</div>
-          <div className="kpi-label">Total Hours Studied</div>
+          <div className="kpi-label">Total Hours</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-value">{taskStats.completed}</div>
-          <div className="kpi-label">Tasks Completed</div>
+          <div className="kpi-label">Tasks Done</div>
         </div>
         <div className="kpi-card">
           <div className="kpi-value">{streakDays}</div>
@@ -132,7 +146,7 @@ const AnalyticsPage = ({ onNavigate }) => {
           <div className="kpi-value">
             {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}%
           </div>
-          <div className="kpi-label">Completion Rate</div>
+          <div className="kpi-label">Efficiency</div>
         </div>
       </div>
 
@@ -140,42 +154,65 @@ const AnalyticsPage = ({ onNavigate }) => {
       <div className="charts-row">
         {/* Weekly Study Hours Bar Chart */}
         <div className="chart-card">
-          <h3 className="chart-title">Study Hours — Last 7 Days</h3>
+          <div className="chart-title">
+            <span>Weekly Momentum</span>
+          </div>
           {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
-            <ResponsiveContainer width="100%" height={200}>
-              <BarChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'Inter', textTransform: 'uppercase' }} />
-                <YAxis tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ fontFamily: 'Inter', fontSize: 12, border: '1px solid var(--border)' }}
-                  formatter={(v) => [`${v}h`, 'Study']}
-                />
-                <Bar dataKey="hours" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+            <>
+              <div style={{ marginBottom: '1.5rem', display: 'flex', gap: '2rem' }}>
+                <div>
+                  <div style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)', fontWeight: 700 }}>Avg Daily</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', color: 'var(--text-primary)' }}>{avgHours}h</div>
+                </div>
+                <div>
+                  <div style={{ fontSize: '0.55rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)', fontWeight: 700 }}>Peak Day</div>
+                  <div style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', color: 'var(--primary)' }}>{bestDay?.label} ({bestDay?.hours}h)</div>
+                </div>
+              </div>
+              <ResponsiveContainer width="100%" height={240}>
+                <BarChart data={weeklyData} margin={{ top: 5, right: 10, left: -25, bottom: 5 }}>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="color-mix(in srgb, var(--border) 40%, transparent)" />
+                  <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fontSize: 10, fontWeight: 700, fontFamily: 'Inter', fill: 'var(--text-secondary)' }} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 10, fill: 'var(--text-secondary)' }} />
+                  <Tooltip
+                    cursor={{ fill: 'color-mix(in srgb, var(--primary) 5%, transparent)', radius: 8 }}
+                    contentStyle={{ borderRadius: '12px', border: 'none' }}
+                  />
+                  <Bar dataKey="hours" fill="var(--primary)" radius={[6, 6, 2, 2]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </>
           )}
         </div>
 
         {/* Task Completion Pie Chart */}
         <div className="chart-card">
-          <h3 className="chart-title">Task Completion</h3>
+          <div className="chart-title">
+            <span>Focus Distribution</span>
+          </div>
           {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
-            <ResponsiveContainer width="100%" height={200}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
                 <Pie
                   data={taskChartData}
-                  cx="50%" cy="50%"
-                  innerRadius={50} outerRadius={75}
-                  paddingAngle={3}
+                  cx="50%" cy="45%"
+                  innerRadius={65} outerRadius={85}
+                  paddingAngle={8}
                   dataKey="value"
+                  animationBegin={0}
+                  animationDuration={1500}
                 >
-                  {taskChartData.map((entry, i) => (
-                    <Cell key={i} fill={entry.color} />
-                  ))}
+                  <Cell fill="var(--primary)" stroke="none" />
+                  <Cell fill="var(--border)" stroke="none" />
                 </Pie>
-                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                <Tooltip contentStyle={{ fontFamily: 'Inter', fontSize: 12 }} />
+                <Legend 
+                  verticalAlign="bottom" 
+                  align="center"
+                  iconType="circle" 
+                  iconSize={10} 
+                  wrapperStyle={{ paddingTop: '20px', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em' }} 
+                />
+                <Tooltip contentStyle={{ borderRadius: '12px', border: 'none' }} />
               </PieChart>
             </ResponsiveContainer>
           )}
@@ -183,13 +220,14 @@ const AnalyticsPage = ({ onNavigate }) => {
       </div>
 
       {/* Motivational Quote */}
-      <div className="analytics-footer border-t border-ink pt-6 mt-6">
-        <p className="font-serif italic text-lg text-muted max-w-2xl">
-          "An investment in knowledge pays the best interest."
+      <div className="analytics-footer">
+        <p className="font-serif italic text-xl text-primary max-w-2xl mx-auto" style={{ opacity: 0.9 }}>
+          "The discipline of consistent effort is where genius is born."
         </p>
-        <p className="text-xs uppercase tracking-widest text-muted mt-1">— Benjamin Franklin</p>
+        <div style={{ marginTop: '1.25rem', height: '1px', width: '40px', background: 'var(--primary)', margin: '1.25rem auto' }} />
+        <p className="text-xs uppercase tracking-widest text-secondary font-bold">Your Potential is Infinite</p>
       </div>
-    </>
+    </div>
   )
 }
 

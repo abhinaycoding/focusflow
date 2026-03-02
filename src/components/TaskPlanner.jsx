@@ -110,6 +110,7 @@ const TaskPlanner = () => {
       if (!current) {
         toast(t('tasks.taskComplete'), 'success')
         addNotification('Task Complete', t('tasks.taskCompleteNotif'), 'success')
+        window.dispatchEvent(new CustomEvent('confetti-burst'))
         const pop = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_f3152ef32d.mp3')
         pop.volume = 0.4
         pop.play().catch(e => console.log("Sound blocked:", e))

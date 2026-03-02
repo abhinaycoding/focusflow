@@ -1,69 +1,98 @@
-import { useEffect, useRef } from 'react'
+import React, { useEffect, useRef, useState } from 'react';
 
-const COLORS = ['#CC4B2C', '#2E5C50', '#D98C00', '#E05A35', '#3D7A6A', '#1A1A1A']
-
-const Confetti = ({ active, duration = 3000 }) => {
-  const canvasRef = useRef(null)
+const Confetti = () => {
+  const canvasRef = useRef(null);
+  const [active, setActive] = useState(false);
 
   useEffect(() => {
-    if (!active) return
-    const canvas = canvasRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    canvas.width = window.innerWidth
-    canvas.height = window.innerHeight
+    const handleConfetti = () => {
+      setActive(true);
+      setTimeout(() => setActive(false), 5000); // 5 seconds of confetti
+    };
 
-    const particles = Array.from({ length: 80 }, () => ({
-      x: Math.random() * canvas.width,
-      y: -20 - Math.random() * 100,
-      w: 4 + Math.random() * 6,
-      h: 8 + Math.random() * 8,
-      color: COLORS[Math.floor(Math.random() * COLORS.length)],
-      vx: (Math.random() - 0.5) * 4,
-      vy: 2 + Math.random() * 4,
-      rot: Math.random() * 360,
-      rotSpeed: (Math.random() - 0.5) * 10,
-      opacity: 1,
-    }))
+    window.addEventListener('confetti-burst', handleConfetti);
+    return () => window.removeEventListener('confetti-burst', handleConfetti);
+  }, []);
 
-    let raf
-    const start = Date.now()
+  useEffect(() => {
+    if (!active) return;
 
-    const draw = () => {
-      const elapsed = Date.now() - start
-      if (elapsed > duration) {
-        ctx.clearRect(0, 0, canvas.width, canvas.height)
-        return
-      }
+    const canvas = canvasRef.current;
+    if (!canvas) return;
 
-      ctx.clearRect(0, 0, canvas.width, canvas.height)
-      const fade = elapsed > duration * 0.7 ? 1 - (elapsed - duration * 0.7) / (duration * 0.3) : 1
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-      particles.forEach(p => {
-        p.x += p.vx
-        p.y += p.vy
-        p.vy += 0.05
-        p.rot += p.rotSpeed
-        p.opacity = fade
+    const pieces = [];
+    const numberOfPieces = 150;
+    const colors = ['#f44336', '#e91e63', '#9c27b0', '#673ab7', '#3f51b5', '#2196f3', '#03a9f4', '#00bcd4', '#009688', '#4caf50', '#8bc34a', '#cddc39', '#ffeb3b', '#ffc107', '#ff9800', '#ff5722'];
 
-        ctx.save()
-        ctx.translate(p.x, p.y)
-        ctx.rotate((p.rot * Math.PI) / 180)
-        ctx.globalAlpha = p.opacity
-        ctx.fillStyle = p.color
-        ctx.fillRect(-p.w / 2, -p.h / 2, p.w, p.h)
-        ctx.restore()
-      })
-
-      raf = requestAnimationFrame(draw)
+    for (let i = 0; i < numberOfPieces; i++) {
+      pieces.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height - canvas.height,
+        v: 0,
+        r: Math.random() * 4 + 1,
+        color: colors[Math.floor(Math.random() * colors.length)],
+        tilt: Math.random() * 10 - 10,
+        tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+        tiltAngle: 0
+      });
     }
 
-    draw()
-    return () => cancelAnimationFrame(raf)
-  }, [active, duration])
+    let animationFrameId;
 
-  if (!active) return null
-  return <canvas ref={canvasRef} className="confetti-canvas" />
-}
+    const update = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-export default Confetti
+      for (let i = 0; i < pieces.length; i++) {
+        const piece = pieces[i];
+        piece.v += 0.2; // Gravity
+        piece.y += piece.v;
+        piece.tiltAngle += piece.tiltAngleIncremental;
+        piece.tilt = Math.sin(piece.tiltAngle) * 15;
+
+        ctx.beginPath();
+        ctx.lineWidth = piece.r;
+        ctx.strokeStyle = piece.color;
+        ctx.moveTo(piece.x + piece.tilt + piece.r / 2, piece.y);
+        ctx.lineTo(piece.x + piece.tilt, piece.y + piece.tilt + piece.r / 2);
+        ctx.stroke();
+
+        if (piece.y > canvas.height) {
+          piece.x = Math.random() * canvas.width;
+          piece.y = -20;
+          piece.v = Math.random() * 2;
+        }
+      }
+
+      animationFrameId = requestAnimationFrame(update);
+    };
+
+    update();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [active]);
+
+  if (!active) return null;
+
+  return (
+    <canvas
+      ref={canvasRef}
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        pointerEvents: 'none',
+        zIndex: 99999,
+      }}
+    />
+  );
+};
+
+export default Confetti;

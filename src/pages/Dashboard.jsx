@@ -8,6 +8,7 @@ import NotificationBell from '../components/NotificationBell'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext'
 import { useTranslation } from '../contexts/LanguageContext'
+import { useNotifications } from '../contexts/NotificationContext'
 import OnboardingTour from '../components/OnboardingTour'
 import DangerZone from '../components/DangerZone'
 import MobileBottomNav from '../components/MobileBottomNav'
@@ -22,6 +23,7 @@ const Dashboard = ({ onNavigate }) => {
   const { user, profile, signOut } = useAuth()
   const { isPro } = usePlan()
   const { t, language } = useTranslation()
+  const { addNotification } = useNotifications()
   const [isEditing, setIsEditing] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [streak, setStreak] = useState(0)
@@ -35,6 +37,21 @@ const Dashboard = ({ onNavigate }) => {
   // Use locale-aware date formatting
   const localeMap = { en: 'en-US', hi: 'hi-IN', es: 'es-ES' }
   const dateStr = new Date().toLocaleDateString(localeMap[language] || 'en-US', { weekday: 'long', month: 'long', day: 'numeric' })
+  
+  // Custom welcome notification
+  useEffect(() => {
+    if (!profile) return
+    const sent = sessionStorage.getItem('ff_welcome_notif')
+    if (sent) return
+
+    const hour = new Date().getHours()
+    let msg = "Ready for a productive session? ☀️"
+    if (hour >= 12 && hour < 18) msg = "Keep the momentum going! 🚀"
+    if (hour >= 18) msg = "Evening focus time? You've got this! 🌙"
+
+    addNotification("Welcome back, " + profile.full_name.split(' ')[0], msg, "info")
+    sessionStorage.setItem('ff_welcome_notif', 'true')
+  }, [profile, addNotification])
 
   // Calculate streak
   useEffect(() => {
@@ -139,7 +156,42 @@ const Dashboard = ({ onNavigate }) => {
           </div>
         )}
 
-        <main className="canvas-main" style={{ marginTop: '3rem', paddingBottom: '5rem' }}>
+        {/* Daily Quote Widget */}
+        <div className="dashboard-quote-card" style={{
+          background: 'linear-gradient(135deg, color-mix(in srgb, var(--primary) 10%, var(--bg-card)), var(--bg-card))',
+          border: '1px solid var(--border)',
+          borderRadius: '24px',
+          padding: '1.5rem',
+          marginTop: '2rem',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '0.5rem',
+          position: 'relative',
+          overflow: 'hidden'
+        }}>
+          <div style={{ position: 'absolute', top: '-10px', left: '10px', fontSize: '4rem', opacity: 0.05, fontFamily: 'serif' }}>"</div>
+          <p style={{ fontFamily: 'var(--font-serif)', fontSize: '1.2rem', color: 'var(--text-primary)', margin: 0, position: 'relative', zIndex: 1 }}>
+            {(() => {
+              const quotes = [
+                "The secret of getting ahead is getting started.",
+                "It always seems impossible until it's done.",
+                "The way to get started is to quit talking and begin doing.",
+                "Don't let yesterday take up too much of today.",
+                "You don't have to be great to start, but you have to start to be great.",
+                "The only way to do great work is to love what you do.",
+                "Believe you can and you're halfway there."
+              ];
+              const day = new Date().getDay();
+              return quotes[day % quotes.length];
+            })()}
+          </p>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem' }}>
+            <span style={{ fontSize: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 800, color: 'var(--primary)' }}>Daily Motivation</span>
+            <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary)' }}>— NoteNook Scholar</span>
+          </div>
+        </div>
+
+        <main className="canvas-main" style={{ marginTop: '2.5rem', paddingBottom: '5rem' }}>
           <DangerZone />
           <DraggableDashboard 
             onNavigate={onNavigate}
