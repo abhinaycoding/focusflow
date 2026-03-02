@@ -3,12 +3,14 @@ import Navigation from '../components/Navigation';
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext';
 import { useToast } from '../contexts/ToastContext';
+import { useTranslation } from '../contexts/LanguageContext';
 import { createRazorpayOrder, openRazorpayCheckout, verifyRazorpayPayment } from '../lib/razorpay';
 import './PricingPage.css';
 
 const PricingPage = ({ onNavigate }) => {
-  const { user } = useAuth()
+  const { user, profile } = useAuth()
   const { isPro, refreshPlan, upgradePlan } = usePlan();
+  const { t } = useTranslation();
   const toast = useToast();
   const [loading, setLoading] = useState(false);
 
@@ -22,25 +24,15 @@ const PricingPage = ({ onNavigate }) => {
 
     setLoading(true);
     try {
-      // 1. Create a simulated/client-side order
-      console.log('[Payment] Initiating order...');
-      const order = await createRazorpayOrder({
-        amount: 99,
-        userId: user.uid,
-        userEmail: user.email,
-        userName: profile?.full_name || '',
-      });
-
-      // 2. Open Razorpay checkout modal
+      // 1. Open Razorpay checkout modal directly (Simple Flow)
       console.log('[Payment] Opening checkout...');
       const paymentResult = await openRazorpayCheckout({
-        orderId: order.orderId,
-        amount: order.amount,
-        currency: order.currency,
-        keyId: order.keyId,
+        amount: 9900, // 99 INR in paise
+        currency: 'INR',
         user,
         profile
       });
+      console.log('[Payment] Checkout completed:', paymentResult);
       console.log('[Payment] Checkout completed:', paymentResult);
 
       // 3. Upgrade Plan directly in Firestore

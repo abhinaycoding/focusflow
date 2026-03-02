@@ -1,6 +1,9 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
+import { db } from '../lib/firebase'
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useTranslation } from '../contexts/LanguageContext'
 import './ResumeBuilderPage.css'
 
 const SECTION_TYPES = ['Education', 'Experience', 'Skills', 'Projects', 'Achievements', 'Certifications']
@@ -17,6 +20,7 @@ const defaultResume = {
 const ResumeBuilderPage = ({ onNavigate }) => {
   const { user, profile } = useAuth()
   const toast = useToast()
+  const { t } = useTranslation()
   const [resume, setResume] = useState({
     ...defaultResume,
     name: profile?.full_name || '',
@@ -25,6 +29,50 @@ const ResumeBuilderPage = ({ onNavigate }) => {
   const [activeSection, setActiveSection] = useState(null)
   const [newSectionType, setNewSectionType] = useState('Education')
   const [printing, setPrinting] = useState(false)
+  const [loading, setLoading] = useState(true)
+  const saveTimeoutRef = useRef(null)
+
+  // Load from Firestore
+  useEffect(() => {
+    if (!user?.uid) return
+
+    const loadResume = async () => {
+      try {
+        const docRef = doc(db, 'resumes', user.uid)
+        const docSnap = await getDoc(docRef)
+        if (docSnap.exists()) {
+          setResume(docSnap.data())
+        }
+      } catch (err) {
+        console.error('Failed to load resume:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadResume()
+  }, [user?.uid])
+
+  // Debounced Auto-save
+  useEffect(() => {
+    if (loading || !user?.uid) return
+
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current)
+
+    saveTimeoutRef.current = setTimeout(async () => {
+      try {
+        await setDoc(doc(db, 'resumes', user.uid), {
+          ...resume,
+          user_id: user.uid,
+          updated_at: serverTimestamp()
+        })
+      } catch (err) {
+        console.error('Auto-save failed:', err)
+      }
+    }, 2000)
+
+    return () => { if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current) }
+  }, [resume, user?.uid, loading])
 
   const updateField = (field, value) => {
     setResume(prev => ({ ...prev, [field]: value }))
@@ -63,7 +111,7 @@ const ResumeBuilderPage = ({ onNavigate }) => {
               ...s,
               entries: s.entries.map(e =>
                 e.id === entryId ? { ...e, [field]: value } : e
-              )
+               )
             }
           : s
       )
@@ -91,19 +139,12 @@ const ResumeBuilderPage = ({ onNavigate }) => {
   }
 
   return (
-    <div className={`canvas-layout ${printing ? 'print-mode' : ''}`}>
-      <header className="canvas-header container no-print">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>Resume Builder</h1>
-          </div>
-          <div className="flex gap-4 items-center">
-            <button onClick={handlePrint} className="btn-primary">Export PDF</button>
-            <button onClick={() => onNavigate('dashboard')} className="uppercase tracking-widest text-xs font-bold text-muted hover:text-primary transition-colors cursor-pointer">← {t('nav.dashboard')}</button>
-          </div>
+    <div className={printing ? 'print-mode' : ''}>
+      {!printing && (
+        <div className="flex justify-end p-4 no-print">
+          <button onClick={handlePrint} className="btn-primary">Export PDF</button>
         </div>
-      </header>
+      )}
 
       <main className="resume-main">
         {/* Editor Panel */}

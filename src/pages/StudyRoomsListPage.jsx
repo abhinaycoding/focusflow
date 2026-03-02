@@ -3,6 +3,7 @@ import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, deleteDoc, doc, setDoc } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
+import { useTranslation } from '../contexts/LanguageContext'
 import './StudyRoomsListPage.css'
 
 const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCase()
@@ -10,6 +11,7 @@ const generateCode = () => Math.random().toString(36).substring(2, 8).toUpperCas
 const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
   const { user } = useAuth()
   const toast = useToast()
+  const { t } = useTranslation()
   const [myRooms, setMyRooms] = useState([])
   const [loading, setLoading] = useState(true)
   const [creating, setCreating] = useState(false)
@@ -25,7 +27,6 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
   const fetchMyRooms = async () => {
     try {
       setLoading(true)
-      // Step 1: Find all room IDs the user belongs to
       const q = query(collection(db, 'room_members'), where('user_id', '==', user.uid))
       const memberSnap = await getDocs(q)
       const roomIds = memberSnap.docs.map(doc => doc.data().room_id)
@@ -35,15 +36,12 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
         return
       }
 
-      // Step 2: Fetch the actual room data
-      // For simplicity in small lists, we fetch all or chunk them.
+      // Fetch room details in chunks (max 10 per 'in' query)
       const roomsData = []
-      for (const id of roomIds) {
-        // This is a bit inefficient for many rooms but standard for a start
-        const roomSnap = await getDocs(query(collection(db, 'study_rooms'), where('id', '==', id)))
-        if (!roomSnap.empty) {
-          roomsData.push({ id, ...roomSnap.docs[0].data() })
-        }
+      for (let i = 0; i < roomIds.length; i += 10) {
+        const chunk = roomIds.slice(i, i + 10)
+        const roomSnap = await getDocs(query(collection(db, 'study_rooms'), where('id', 'in', chunk)))
+        roomSnap.forEach(doc => roomsData.push({ id: doc.id, ...doc.data() }))
       }
       setMyRooms(roomsData)
     } catch (err) {
@@ -68,7 +66,6 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
       const roomRef = await addDoc(collection(db, 'study_rooms'), roomData)
       const roomId = roomRef.id
       
-      // Update the doc with its own ID for easier querying later if needed
       await setDoc(doc(db, 'study_rooms', roomId), { id: roomId }, { merge: true })
 
       await addDoc(collection(db, 'room_members'), {
@@ -104,7 +101,6 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
 
       const room = { id: roomSnap.docs[0].id, ...roomSnap.docs[0].data() }
 
-      // Check if already a member
       const memberQ = query(
         collection(db, 'room_members'), 
         where('room_id', '==', room.id),
@@ -152,19 +148,7 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
   }
 
   return (
-    <div className="canvas-layout">
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>Study Rooms</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} className="uppercase tracking-widest text-xs font-bold text-muted hover:text-primary transition-colors cursor-pointer">
-            ← {t('nav.dashboard')}
-          </button>
-        </div>
-      </header>
-
+    <>
       <main className="rooms-main container">
         {/* Tabs */}
         <div className="rooms-tabs">
@@ -268,7 +252,7 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
           </div>
         )}
       </main>
-    </div>
+    </>
   )
 }
 

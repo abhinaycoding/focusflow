@@ -14,6 +14,8 @@ import MobileBottomNav from '../components/MobileBottomNav'
 import StreakFlame from '../components/StreakFlame'
 import XPBar from '../components/XPBar'
 import DailyScore from '../components/DailyScore'
+import { db } from '../lib/firebase'
+import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import './Dashboard.css'
 
 const Dashboard = ({ onNavigate }) => {
@@ -42,18 +44,22 @@ const Dashboard = ({ onNavigate }) => {
         const q = query(
           collection(db, 'sessions'),
           where('user_id', '==', user.uid),
-          where('completed', '==', true),
-          orderBy('created_at', 'desc')
+          where('completed', '==', true)
         )
 
         const querySnapshot = await getDocs(q)
         if (querySnapshot.empty) return
 
-        const data = querySnapshot.docs.map(doc => doc.data())
+        const data = querySnapshot.docs
+          .map(doc => doc.data())
+          .sort((a, b) => {
+            const da = a.created_at?.toDate ? a.created_at.toDate() : new Date(a.created_at)
+            const db = b.created_at?.toDate ? b.created_at.toDate() : new Date(b.created_at)
+            return db - da
+          })
 
         // Get unique dates
         const dates = [...new Set(data.map(s => {
-          // Firebase timestamps might be objects or strings depending on how they were saved
           const date = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
           return date.toDateString()
         }))]
@@ -74,91 +80,11 @@ const Dashboard = ({ onNavigate }) => {
     calcStreak()
   }, [user?.uid])
 
-
   return (
     <>
-    <div className="canvas-layout">
-      {/* Header */}
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div
-            className="logo-mark font-serif text-4xl text-primary flex-shrink-0"
-            style={{ cursor: 'pointer' }}
-            onClick={() => onNavigate('landing')}
-          >
-            NN.
-          </div>
-          
-          {/* Desktop Navigation - 3 Zone Layout */}
-          <div className="desktop-nav-container flex-grow flex justify-between items-center ml-8 min-w-0">
-            
-            {/* Center: Primary Navigation */}
-            <nav className="desktop-nav-main flex gap-4 xl:gap-8 items-center flex-grow justify-center min-w-0">
-              <button onClick={() => onNavigate('analytics')} className="dash-nav-btn">{t('dashboard.analytics')}</button>
-              <button onClick={() => onNavigate('rooms')} className="dash-nav-btn">{t('dashboard.studyRooms')}</button>
-              <button onClick={() => onNavigate('calendar')} className="dash-nav-btn">{t('dashboard.calendar')}</button>
-              <button onClick={() => onNavigate('exams')} className="dash-nav-btn">
-                {t('dashboard.exams')} {!isPro && <span className="pro-lock-badge" data-tooltip={t('dashboard.proFeatureExam')}>Pro</span>}
-              </button>
-              <button onClick={() => onNavigate('goals')} className="dash-nav-btn">{t('dashboard.goals')}</button>
-              <button onClick={() => onNavigate('resume')} className="dash-nav-btn">
-                {t('dashboard.resume')} {!isPro && <span className="pro-lock-badge" data-tooltip={t('dashboard.proFeatureResume')}>Pro</span>}
-              </button>
-            </nav>
-
-            {/* Right: Utilities & Account */}
-            <div className="desktop-nav-utilities flex gap-4 items-center justify-end flex-shrink-0">
-              <div className="flex items-center gap-4 border-r border-ink pr-6">
-                <div className="uppercase tracking-[0.2em] text-[9px] font-bold text-muted">
-                  {isPro ? t('dashboard.pro') : t('dashboard.free')}
-                </div>
-                <NotificationBell />
-              </div>
-              
-              <button 
-                onClick={() => isPro ? setIsEditing(!isEditing) : onNavigate('pricing')}
-                className={`dash-nav-btn ${isEditing ? 'text-primary border-b border-primary' : ''}`}
-              >
-                {isEditing ? t('dashboard.saveLayout') : t('dashboard.customize')} {!isPro && <span className="pro-lock-badge" data-tooltip={t('dashboard.proFeatureCanvas')}>Pro</span>}
-              </button>
-              
-              <button
-                onClick={() => onNavigate('pricing')}
-                className={`dash-nav-btn ${!isPro ? 'dash-nav-btn--highlight' : ''}`}
-              >
-                {isPro ? t('dashboard.plans') : t('dashboard.upgrade')}
-              </button>
-
-              <button
-                onClick={async () => {
-                  await signOut()
-                  onNavigate('landing')
-                }}
-                className="dash-nav-btn"
-                title="Sign Out"
-                style={{ opacity: 0.6, fontSize: '0.7rem' }}
-              >
-                ↪ Sign Out
-              </button>
-              
-            </div>
-          </div>
-
-          {/* Mobile Hamburger Toggle & Bell */}
-          <div className="mobile-nav-toggle items-center gap-4">
-            <NotificationBell />
-            <button 
-              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} 
-              className="text-primary text-3xl pb-1"
-              aria-label="Toggle mobile menu"
-            >
-              {isMobileMenuOpen ? '×' : '☰'}
-            </button>
-          </div>
-        </div>
-
+      <div className="dashboard-content">
         {/* Welcome Greeting */}
-        <div style={{ marginTop: '1.5rem' }}>
+        <div className="dashboard-greeting-section">
           <div className="welcome-greeting">
             {timeGreeting}, {userName}.
             {streak > 0 && <StreakFlame streak={streak} />}
@@ -169,6 +95,14 @@ const Dashboard = ({ onNavigate }) => {
               <XPBar />
             </div>
             <DailyScore />
+            
+            <button 
+              onClick={() => isPro ? setIsEditing(!isEditing) : onNavigate('pricing')}
+              className={`dash-nav-btn ${isEditing ? 'text-primary border-b border-primary' : ''}`}
+              style={{ marginLeft: 'auto' }}
+            >
+              {isEditing ? t('dashboard.saveLayout') : t('dashboard.customize')} {!isPro && <span className="pro-lock-badge">Pro</span>}
+            </button>
           </div>
         </div>
 
@@ -203,23 +137,22 @@ const Dashboard = ({ onNavigate }) => {
             </button>
           </div>
         )}
-      </header>
 
-      <main className="canvas-main container" style={{ marginTop: '3rem', paddingBottom: '5rem' }}>
-        <DangerZone />
-        <DraggableDashboard 
-          onNavigate={onNavigate}
-          isPro={isPro}
-          isEditing={isEditing}
-        />
-      </main>
-    </div>
+        <main className="canvas-main" style={{ marginTop: '3rem', paddingBottom: '5rem' }}>
+          <DangerZone />
+          <DraggableDashboard 
+            onNavigate={onNavigate}
+            isPro={isPro}
+            isEditing={isEditing}
+          />
+        </main>
+      </div>
 
-    {/* Onboarding Tour — first visit only */}
-    {showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}
+      {/* Onboarding Tour — first visit only */}
+      {showTour && <OnboardingTour onComplete={() => setShowTour(false)} />}
 
-    {/* Mobile Bottom Nav */}
-    <MobileBottomNav onNavigate={onNavigate} currentPage="dashboard" />
+      {/* Mobile Bottom Nav */}
+      <MobileBottomNav onNavigate={onNavigate} currentPage="dashboard" />
     </>
   )
 }

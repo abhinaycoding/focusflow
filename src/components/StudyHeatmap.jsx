@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { db } from '../lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import './StudyHeatmap.css'
 
@@ -84,7 +84,7 @@ const StudyHeatmap = () => {
         const q = query(
           collection(db, 'sessions'), 
           where('user_id', '==', user.uid),
-          where('created_at', '>=', yearAgo.toISOString())
+          where('created_at', '>=', Timestamp.fromDate(yearAgo))
         )
         const snap = await getDocs(q)
         const sessions = snap.docs.map(doc => doc.data())
@@ -92,7 +92,8 @@ const StudyHeatmap = () => {
         // Aggregate hours per day
         const byDay = {}
         ;(sessions || []).forEach(s => {
-          const dateKey = s.created_at.split('T')[0]
+          const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+          const dateKey = d.toISOString().split('T')[0]
           if (!byDay[dateKey]) byDay[dateKey] = 0
           byDay[dateKey] += (s.duration_seconds || 0) / 3600
         })

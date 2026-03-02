@@ -53,6 +53,10 @@
 
 .dash-section {
   min-width: 0;
+  padding: 1.5rem 2.5rem;
+  border-radius: var(--radius-lg);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
 }
 
 .dash-section-title {

@@ -55,15 +55,18 @@ const TaskPlanner = () => {
 
     const q = query(
       collection(db, 'tasks'),
-      where('user_id', '==', user.uid),
-      orderBy('created_at', 'desc')
+      where('user_id', '==', user.uid)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const tasksData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })).sort((a, b) => {
+        const da = a.created_at?.toDate ? a.created_at.toDate() : new Date(a.created_at)
+        const db = b.created_at?.toDate ? b.created_at.toDate() : new Date(b.created_at)
+        return db - da
+      })
       setTasks(tasksData)
       setLoading(false)
     }, (err) => {

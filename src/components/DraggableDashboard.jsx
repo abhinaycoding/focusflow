@@ -50,8 +50,8 @@ const DashboardWidget = ({ id, title, children, isEditing, index }) => {
   };
 
   return (
-    <section ref={setNodeRef} style={style} className={`dash-section widget-reveal ${isEditing ? 'border-2 border-primary/50 border-dashed rounded bg-primary/5' : ''}`}>
-      <div className="flex justify-between items-center mb-4">
+    <section ref={setNodeRef} style={style} className={`dash-section dashboard-widget widget-reveal ${isEditing ? 'border-2 border-primary/50 border-dashed rounded bg-primary/5' : ''}`}>
+      <div className="flex justify-between items-center mb-4 px-4">
         <h2 className="text-xl font-serif text-muted italic">{title}</h2>
         {isEditing && (
           <div 

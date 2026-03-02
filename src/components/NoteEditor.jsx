@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { db } from '../lib/firebase'
 import { doc, updateDoc, serverTimestamp } from 'firebase/firestore'
+import { useAuth } from '../contexts/AuthContext'
 
 const NoteEditor = ({ note, onUpdate }) => {
   const [title, setTitle] = useState(note.title || '')

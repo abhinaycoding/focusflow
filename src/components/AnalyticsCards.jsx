@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { db } from '../lib/firebase'
-import { collection, query, where, getDocs } from 'firebase/firestore'
+import { collection, query, where, getDocs, Timestamp } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../contexts/LanguageContext'
 import '../pages/Dashboard.css'
@@ -68,11 +68,17 @@ const AnalyticsCards = () => {
       const today = new Date(); today.setHours(0, 0, 0, 0)
 
       const [sessSnap, taskSnap] = await Promise.all([
-        getDocs(query(collection(db, 'sessions'), where('user_id', '==', user.uid), where('created_at', '>=', today.toISOString()))),
+        getDocs(query(collection(db, 'sessions'), where('user_id', '==', user.uid))),
         getDocs(query(collection(db, 'tasks'), where('user_id', '==', user.uid)))
       ])
 
-      const sessions = sessSnap.docs.map(doc => doc.data())
+      const todayStart = today.getTime()
+      const sessions = sessSnap.docs
+        .map(doc => doc.data())
+        .filter(s => {
+          const date = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+          return date.getTime() >= todayStart
+        })
       const allTasks = taskSnap.docs.map(doc => doc.data())
 
       // Harmonized filter with TaskPlanner

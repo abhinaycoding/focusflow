@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { db } from '../lib/firebase'
-import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
+import { collection, query, where, getDocs, orderBy, Timestamp } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../contexts/LanguageContext'
 import {
@@ -17,6 +17,7 @@ const AnalyticsPage = ({ onNavigate }) => {
   const [totalHours, setTotalHours] = useState(0)
   const [streakDays, setStreakDays] = useState(0)
   const [loading, setLoading] = useState(true)
+  const { t } = useTranslation()
 
   useEffect(() => {
     if (user?.uid) fetchAnalytics()
@@ -44,15 +45,21 @@ const AnalyticsPage = ({ onNavigate }) => {
 
       const qRecent = query(
         collection(db, 'sessions'), 
-        where('user_id', '==', user.uid),
-        where('created_at', '>=', sevenAgo.toISOString())
+        where('user_id', '==', user.uid)
       )
       const recentSnap = await getDocs(qRecent)
-      const recentSessions = recentSnap.docs.map(doc => doc.data())
+      const allRecentSessions = recentSnap.docs.map(doc => doc.data())
+      
+      const sevenAgoTime = sevenAgo.getTime()
+      const recentSessions = allRecentSessions.filter(s => {
+        const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+        return d.getTime() >= sevenAgoTime
+      })
 
       // Map sessions to days
       recentSessions.forEach(s => {
-        const sessionDate = s.created_at.split('T')[0]
+        const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+        const sessionDate = d.toISOString().split('T')[0]
         const day = days.find(d => d.date === sessionDate)
         if (day) day.hours += parseFloat((s.duration_seconds / 3600).toFixed(2))
       })
@@ -82,7 +89,10 @@ const AnalyticsPage = ({ onNavigate }) => {
         const check = new Date(today)
         check.setDate(check.getDate() - i)
         const dateStr = check.toISOString().split('T')[0]
-        const hasSession = allSessions.some(s => s.created_at?.split('T')[0] === dateStr)
+        const hasSession = allSessions.some(s => {
+          const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+          return d.toISOString().split('T')[0] === dateStr
+        })
         if (hasSession) streak++
         else break
       }
@@ -100,100 +110,86 @@ const AnalyticsPage = ({ onNavigate }) => {
   ]
 
   return (
-    <div className="canvas-layout">
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>Analytics</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} className="uppercase tracking-widest text-xs font-bold text-muted hover:text-primary transition-colors cursor-pointer">
-            ← {t('nav.dashboard')}
-          </button>
+    <>
+      {/* Hero: Study Heatmap */}
+      <StudyHeatmap />
+
+      {/* KPI Row */}
+      <div className="kpi-row">
+        <div className="kpi-card">
+          <div className="kpi-value">{totalHours}</div>
+          <div className="kpi-label">Total Hours Studied</div>
         </div>
-      </header>
-
-      <main className="analytics-main container">
-        {/* Hero: Study Heatmap */}
-        <StudyHeatmap />
-
-        {/* KPI Row */}
-        <div className="kpi-row">
-          <div className="kpi-card">
-            <div className="kpi-value">{totalHours}</div>
-            <div className="kpi-label">Total Hours Studied</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-value">{taskStats.completed}</div>
-            <div className="kpi-label">Tasks Completed</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-value">{streakDays}</div>
-            <div className="kpi-label">Day Streak 🔥</div>
-          </div>
-          <div className="kpi-card">
-            <div className="kpi-value">
-              {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}%
-            </div>
-            <div className="kpi-label">Completion Rate</div>
-          </div>
+        <div className="kpi-card">
+          <div className="kpi-value">{taskStats.completed}</div>
+          <div className="kpi-label">Tasks Completed</div>
         </div>
-
-        {/* Charts Row */}
-        <div className="charts-row">
-          {/* Weekly Study Hours Bar Chart */}
-          <div className="chart-card">
-            <h3 className="chart-title">Study Hours — Last 7 Days</h3>
-            {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
-                  <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'Inter', textTransform: 'uppercase' }} />
-                  <YAxis tick={{ fontSize: 11 }} />
-                  <Tooltip
-                    contentStyle={{ fontFamily: 'Inter', fontSize: 12, border: '1px solid var(--border)' }}
-                    formatter={(v) => [`${v}h`, 'Study']}
-                  />
-                  <Bar dataKey="hours" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            )}
+        <div className="kpi-card">
+          <div className="kpi-value">{streakDays}</div>
+          <div className="kpi-label">Day Streak 🔥</div>
+        </div>
+        <div className="kpi-card">
+          <div className="kpi-value">
+            {taskStats.total > 0 ? Math.round((taskStats.completed / taskStats.total) * 100) : 0}%
           </div>
+          <div className="kpi-label">Completion Rate</div>
+        </div>
+      </div>
 
-          {/* Task Completion Pie Chart */}
-          <div className="chart-card">
-            <h3 className="chart-title">Task Completion</h3>
-            {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
-              <ResponsiveContainer width="100%" height={200}>
-                <PieChart>
-                  <Pie
-                    data={taskChartData}
-                    cx="50%" cy="50%"
-                    innerRadius={50} outerRadius={75}
-                    paddingAngle={3}
-                    dataKey="value"
-                  >
-                    {taskChartData.map((entry, i) => (
-                      <Cell key={i} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
-                  <Tooltip contentStyle={{ fontFamily: 'Inter', fontSize: 12 }} />
-                </PieChart>
-              </ResponsiveContainer>
-            )}
-          </div>
+      {/* Charts Row */}
+      <div className="charts-row">
+        {/* Weekly Study Hours Bar Chart */}
+        <div className="chart-card">
+          <h3 className="chart-title">Study Hours — Last 7 Days</h3>
+          {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart data={weeklyData} margin={{ top: 5, right: 10, left: -20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" />
+                <XAxis dataKey="label" tick={{ fontSize: 11, fontFamily: 'Inter', textTransform: 'uppercase' }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ fontFamily: 'Inter', fontSize: 12, border: '1px solid var(--border)' }}
+                  formatter={(v) => [`${v}h`, 'Study']}
+                />
+                <Bar dataKey="hours" fill="var(--text-primary)" radius={[2, 2, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          )}
         </div>
 
-        {/* Motivational Quote */}
-        <div className="analytics-footer border-t border-ink pt-6 mt-6">
-          <p className="font-serif italic text-lg text-muted max-w-2xl">
-            "An investment in knowledge pays the best interest."
-          </p>
-          <p className="text-xs uppercase tracking-widest text-muted mt-1">— Benjamin Franklin</p>
+        {/* Task Completion Pie Chart */}
+        <div className="chart-card">
+          <h3 className="chart-title">Task Completion</h3>
+          {loading ? <p className="text-xs text-muted italic">Loading data...</p> : (
+            <ResponsiveContainer width="100%" height={200}>
+              <PieChart>
+                <Pie
+                  data={taskChartData}
+                  cx="50%" cy="50%"
+                  innerRadius={50} outerRadius={75}
+                  paddingAngle={3}
+                  dataKey="value"
+                >
+                  {taskChartData.map((entry, i) => (
+                    <Cell key={i} fill={entry.color} />
+                  ))}
+                </Pie>
+                <Legend iconType="circle" iconSize={8} wrapperStyle={{ fontSize: 11 }} />
+                <Tooltip contentStyle={{ fontFamily: 'Inter', fontSize: 12 }} />
+              </PieChart>
+            </ResponsiveContainer>
+          )}
         </div>
-      </main>
-    </div>
+      </div>
+
+      {/* Motivational Quote */}
+      <div className="analytics-footer border-t border-ink pt-6 mt-6">
+        <p className="font-serif italic text-lg text-muted max-w-2xl">
+          "An investment in knowledge pays the best interest."
+        </p>
+        <p className="text-xs uppercase tracking-widest text-muted mt-1">— Benjamin Franklin</p>
+      </div>
+    </>
   )
 }
 

@@ -52,7 +52,7 @@ export function openRazorpayCheckout({ orderId, amount, currency, keyId, user, p
       currency: currency,
       name: 'NoteNook',
       description: 'Master Tier — Unlock all features',
-      order_id: orderId,
+      // order_id: orderId, // Removed for Simple Checkout flow
       prefill: {
         name: profile?.full_name || user?.displayName || '',
         email: user?.email || '',
@@ -69,10 +69,9 @@ export function openRazorpayCheckout({ orderId, amount, currency, keyId, user, p
         animation: true,
       },
       handler: (response) => {
+        // For Simple Integration, we get razorpay_payment_id back
         resolve({
-          razorpay_order_id: response.razorpay_order_id,
           razorpay_payment_id: response.razorpay_payment_id,
-          razorpay_signature: response.razorpay_signature,
         })
       },
     }

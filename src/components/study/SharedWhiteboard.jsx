@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
 import { db } from '../../lib/firebase'
-import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, limit } from 'firebase/firestore'
+import { collection, addDoc, onSnapshot, query, where, orderBy, serverTimestamp, limit, Timestamp } from 'firebase/firestore'
 
 const SharedWhiteboard = ({ roomId, user, onClose }) => {
   const canvasRef = useRef(null)
@@ -112,7 +112,7 @@ const SharedWhiteboard = ({ roomId, user, onClose }) => {
     const q = query(
       collection(db, 'room_whiteboard'),
       where('room_id', '==', roomId),
-      where('created_at', '>', new Date(Date.now() - 30000)), // Limit to recent strokes
+      where('created_at', '>', Timestamp.fromDate(new Date(Date.now() - 30000))), // Limit to recent strokes
       orderBy('created_at', 'asc'),
       limit(200)
     )

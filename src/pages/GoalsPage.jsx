@@ -12,6 +12,15 @@ import './GoalsPage.css'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, orderBy, serverTimestamp } from 'firebase/firestore'
 
+const BADGES = [
+  { id: 'firstSession', icon: '🎯', labelKey: 'goals.badges.firstSession.label', descKey: 'goals.badges.firstSession.desc', check: (s, t, h) => s >= 1 },
+  { id: 'fiveSessions', icon: '🔥', labelKey: 'goals.badges.fiveSessions.label', descKey: 'goals.badges.fiveSessions.desc', check: (s, t, h) => s >= 5 },
+  { id: 'tenTasks', icon: '✅', labelKey: 'goals.badges.tenTasks.label', descKey: 'goals.badges.tenTasks.desc', check: (s, t, h) => t >= 10 },
+  { id: 'tenHours', icon: '⏳', labelKey: 'goals.badges.tenHours.label', descKey: 'goals.badges.tenHours.desc', check: (s, t, h) => h >= 10 },
+  { id: 'twentyFiveHours', icon: '🎓', labelKey: 'goals.badges.twentyFiveHours.label', descKey: 'goals.badges.twentyFiveHours.desc', check: (s, t, h) => h >= 25 },
+  { id: 'fiftyTasks', icon: '🏆', labelKey: 'goals.badges.fiftyTasks.label', descKey: 'goals.badges.fiftyTasks.desc', check: (s, t, h) => t >= 50 }
+]
+
 const GoalsPage = ({ onNavigate }) => {
   const { user } = useAuth()
   const { isPro } = usePlan()
@@ -39,11 +48,15 @@ const GoalsPage = ({ onNavigate }) => {
         // Load Goals (Tasks with due_date == 'goal')
         const qTasks = query(
           collection(db, 'tasks'), 
-          where('user_id', '==', user.uid),
-          orderBy('created_at', 'asc')
+          where('user_id', '==', user.uid)
         )
         const tasksSnap = await getDocs(qTasks)
         const allTasks = tasksSnap.docs.map(doc => ({ id: doc.id, ...doc.data() }))
+          .sort((a, b) => {
+            const da = a.created_at?.toDate ? a.created_at.toDate() : new Date(a.created_at)
+            const db = b.created_at?.toDate ? b.created_at.toDate() : new Date(b.created_at)
+            return da - db
+          })
         
         if (isMounted) {
           const goalsData = allTasks.filter(t => t.due_date === 'goal')
@@ -114,7 +127,9 @@ const GoalsPage = ({ onNavigate }) => {
       newBadges.forEach(badge => {
         addNotification(
           t('goals.milestoneUnlocked'),
-          t('goals.badgeEarned').replace('{label}', badge.label).replace('{desc}', badge.desc),
+          t('goals.badgeEarned')
+            .replace('{label}', t(badge.labelKey))
+            .replace('{desc}', t(badge.descKey)),
           'success'
         )
       })
@@ -155,16 +170,7 @@ const GoalsPage = ({ onNavigate }) => {
   return (
     <div className="canvas-layout">
       <Confetti active={celebrate} />
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>{t('goals.pageTitle')}</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} className="uppercase tracking-widest text-xs font-bold text-muted hover:text-primary transition-colors cursor-pointer">{t('goals.backDashboard')}</button>
-        </div>
-      </header>
-
+      <Confetti active={celebrate} />
       <main className="goals-main container">
         <div className="goals-grid">
 
@@ -254,8 +260,8 @@ const GoalsPage = ({ onNavigate }) => {
                 return (
                   <div key={badge.id} className={`badge-card ${unlocked ? 'unlocked' : 'locked'}`}>
                     <div className="badge-icon">{badge.icon}</div>
-                    <div className="badge-label">{badge.label}</div>
-                    <div className="badge-desc">{badge.desc}</div>
+                    <div className="badge-label">{t(badge.labelKey)}</div>
+                    <div className="badge-desc">{t(badge.descKey)}</div>
                     {unlocked && <div className="badge-status">{t('goals.earned')}</div>}
                   </div>
                 )
@@ -278,3 +284,4 @@ const GoalsPage = ({ onNavigate }) => {
 }
 
 export default GoalsPage
+

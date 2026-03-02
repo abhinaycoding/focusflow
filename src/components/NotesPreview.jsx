@@ -17,16 +17,18 @@ const NotesPreview = ({ onNavigate }) => {
 
     const q = query(
       collection(db, 'notes'),
-      where('user_id', '==', user.uid),
-      orderBy('updated_at', 'desc'),
-      limit(4)
+      where('user_id', '==', user.uid)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })).sort((a, b) => {
+        const da = a.updated_at?.toDate ? a.updated_at.toDate() : new Date(a.updated_at)
+        const db = b.updated_at?.toDate ? b.updated_at.toDate() : new Date(b.updated_at)
+        return db - da
+      }).slice(0, 4)
       setNotes(notesData)
       setLoading(false)
     }, (err) => {
@@ -37,8 +39,9 @@ const NotesPreview = ({ onNavigate }) => {
     return () => unsubscribe()
   }, [user])
 
-  const formatDate = (dateStr) => {
-    const diff = Date.now() - new Date(dateStr)
+  const formatDate = (dateVal) => {
+    const d = dateVal?.toDate ? dateVal.toDate() : new Date(dateVal)
+    const diff = Date.now() - d.getTime()
     const hours = Math.floor(diff / 3600000)
     if (hours < 1) return t('notes.justNow')
     if (hours < 24) return `${hours}${t('notes.hAgo')}`

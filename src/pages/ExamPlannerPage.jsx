@@ -5,9 +5,12 @@ import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useTranslation } from '../contexts/LanguageContext'
 
+const COMMON_EXAMS = ['JEE Main', 'JEE Advanced', 'NEET', 'UPSC', 'GATE', 'CAT', 'Custom']
+
 const ExamPlannerPage = ({ onNavigate }) => {
   const { user } = useAuth()
   const toast = useToast()
+  const { t } = useTranslation()
   const [examDate, setExamDate] = useState('')
   const [examName, setExamName] = useState('JEE Main')
   const [customExam, setCustomExam] = useState('')
@@ -22,13 +25,11 @@ const ExamPlannerPage = ({ onNavigate }) => {
     const loadExamData = async () => {
       if (!user?.uid) return
       try {
-        // Restore from localStorage first
         const savedDate = localStorage.getItem(`ff_exam_date_${user.uid}`)
         const savedName = localStorage.getItem(`ff_exam_name_${user.uid}`)
         if (savedDate) setExamDate(savedDate)
         if (savedName) setExamName(savedName)
 
-        // Load topics from tasks table (syllabus)
         const q = query(
           collection(db, 'tasks'), 
           where('user_id', '==', user.uid),
@@ -38,7 +39,6 @@ const ExamPlannerPage = ({ onNavigate }) => {
         const snap = await getDocs(q)
         setTopics(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })))
 
-        // Load exam name from profile as fallback
         const profileSnap = await getDoc(doc(db, 'profiles', user.uid))
         if (profileSnap.exists()) {
           const profileData = profileSnap.data()
@@ -125,28 +125,13 @@ const ExamPlannerPage = ({ onNavigate }) => {
   const completedCount = topics.filter(t => t.completed).length
   const progressPct = topics.length > 0 ? Math.round((completedCount / topics.length) * 100) : 0
   const displayExam = examName === 'Custom' ? customExam : examName
-
-  // Group topics by subject (priority field)
   const subjects = [...new Set(topics.map(t => t.priority).filter(Boolean))]
 
   return (
-    <div className="canvas-layout">
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>Exam Planner</h1>
-          </div>
-          <button onClick={() => onNavigate('dashboard')} className="uppercase tracking-widest text-xs font-bold text-muted hover:text-primary transition-colors cursor-pointer">
-            ← {t('nav.dashboard')}
-          </button>
-        </div>
-      </header>
-
+    <>
       <main className="exam-main container">
         <div className="exam-grid">
           
-          {/* Left: Countdown */}
           <div className="exam-left">
             <div className="exam-setup card">
               <h3 className="section-label">Target Examination</h3>
@@ -179,7 +164,6 @@ const ExamPlannerPage = ({ onNavigate }) => {
               />
             </div>
 
-            {/* Countdown Display */}
             {countdown && !countdown.done ? (
               <div className="countdown-display">
                 <div className="countdown-title">{displayExam || 'Exam'} in</div>
@@ -216,7 +200,6 @@ const ExamPlannerPage = ({ onNavigate }) => {
             )}
           </div>
 
-          {/* Right: Syllabus Tracker */}
           <div className="exam-right">
             <div className="syllabus-header">
               <h3 className="section-label">Syllabus Tracker</h3>
@@ -228,7 +211,6 @@ const ExamPlannerPage = ({ onNavigate }) => {
               </div>
             </div>
 
-            {/* Add Topic */}
             <div className="add-topic-row">
               <select
                 value={newTopicSubject}
@@ -250,7 +232,6 @@ const ExamPlannerPage = ({ onNavigate }) => {
               <button onClick={handleAddTopic} className="btn-icon" disabled={saving}>+</button>
             </div>
 
-            {/* Topics by Subject */}
             <div className="topics-list">
               {subjects.length === 0 && (
                 <p className="text-xs text-muted italic mt-4">No topics yet. Add chapters from your syllabus.</p>
@@ -275,7 +256,7 @@ const ExamPlannerPage = ({ onNavigate }) => {
 
         </div>
       </main>
-    </div>
+    </>
   )
 }
 

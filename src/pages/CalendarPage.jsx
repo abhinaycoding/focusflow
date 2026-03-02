@@ -53,14 +53,16 @@ const CalendarPage = ({ onNavigate }) => {
   const dayData = useMemo(() => {
     const map = {}
     sessions.forEach(s => {
-      const d = new Date(s.created_at).toDateString()
+      const date = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+      const d = date.toDateString()
       if (!map[d]) map[d] = { sessions: 0, minutes: 0, tasks: 0, tasksDone: 0 }
       map[d].sessions++
       map[d].minutes += Math.round((s.duration_seconds || 0) / 60)
     })
     tasks.forEach(t => {
       if (t.due_date === 'goal' || t.due_date === 'syllabus') return
-      const d = new Date(t.created_at).toDateString()
+      const date = t.created_at?.toDate ? t.created_at.toDate() : new Date(t.created_at)
+      const d = date.toDateString()
       if (!map[d]) map[d] = { sessions: 0, minutes: 0, tasks: 0, tasksDone: 0 }
       map[d].tasks++
       if (t.completed) map[d].tasksDone++
@@ -128,42 +130,35 @@ const CalendarPage = ({ onNavigate }) => {
 
   return (
     <div className="canvas-layout">
-      <header className="canvas-header container">
-        <div className="flex justify-between items-center border-b border-ink pb-4 pt-4">
-          <div className="flex items-center gap-4">
-            <div className="logo-mark font-serif cursor-pointer text-4xl text-primary" onClick={() => onNavigate('dashboard')}>NN.</div>
-            <h1 className="text-xl font-serif text-muted italic ml-4 pl-4" style={{ borderLeft: '1px solid var(--border)' }}>Calendar</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            {isPro && (
-              <>
-                <button
-                  onClick={() => setHeatmap(!heatmap)}
-                  className={`cal-toggle-btn ${heatmap ? 'active' : ''}`}
-                >
-                  {heatmap ? '🔥 Heatmap' : 'Heatmap'}
-                </button>
-                <div className="cal-view-toggle">
-                  <button
-                    onClick={() => setView('month')}
-                    className={`cal-toggle-btn ${view === 'month' ? 'active' : ''}`}
-                  >
-                    Month
-                  </button>
-                  <button
-                    onClick={() => setView('week')}
-                    className={`cal-toggle-btn ${view === 'week' ? 'active' : ''}`}
-                  >
-                    Week
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
+      <main className="container" style={{ paddingBottom: '5rem' }}>
+        <div className="flex items-center justify-between mb-8">
+           <div className="flex items-center gap-4">
+             {isPro && (
+               <>
+                 <button
+                   onClick={() => setHeatmap(!heatmap)}
+                   className={`cal-toggle-btn ${heatmap ? 'active' : ''}`}
+                 >
+                   {heatmap ? '🔥 Heatmap' : 'Heatmap'}
+                 </button>
+                 <div className="cal-view-toggle">
+                   <button
+                     onClick={() => setView('month')}
+                     className={`cal-toggle-btn ${view === 'month' ? 'active' : ''}`}
+                   >
+                     Month
+                   </button>
+                   <button
+                     onClick={() => setView('week')}
+                     className={`cal-toggle-btn ${view === 'week' ? 'active' : ''}`}
+                   >
+                     Week
+                   </button>
+                 </div>
+               </>
+             )}
+           </div>
         </div>
-      </header>
-
-      <main className="container" style={{ marginTop: '2rem', paddingBottom: '5rem' }}>
 
         {/* Month Navigation */}
         <div className="cal-month-nav">
@@ -256,10 +251,11 @@ const CalendarPage = ({ onNavigate }) => {
               const key = date.toDateString()
               const data = dayData[key]
               const isToday = key === todayStr
-              const dayTasks = tasks.filter(t =>
-                t.due_date !== 'goal' && t.due_date !== 'syllabus' &&
-                new Date(t.created_at).toDateString() === key
-              )
+              const dayTasks = tasks.filter(t => {
+                const date = t.created_at?.toDate ? t.created_at.toDate() : new Date(t.created_at)
+                return t.due_date !== 'goal' && t.due_date !== 'syllabus' &&
+                date.toDateString() === key
+              })
 
               return (
                 <div key={i} className={`cal-week-col ${isToday ? 'cal-week-col--today' : ''}`}>
@@ -340,3 +336,4 @@ const CalendarPage = ({ onNavigate }) => {
 }
 
 export default CalendarPage
+

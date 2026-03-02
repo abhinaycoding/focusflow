@@ -5,6 +5,7 @@ import ProGate from '../components/ProGate'
 import { useToast } from '../contexts/ToastContext'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext'
+import { useTranslation } from '../contexts/LanguageContext'
 import { db } from '../lib/firebase'
 import { 
   collection, 
@@ -22,6 +23,7 @@ import './LibraryPage.css'
 const LibraryPage = ({ onNavigate }) => {
   const { user } = useAuth()
   const { isPro } = usePlan()
+  const { t } = useTranslation()
   const toast = useToast()
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
@@ -36,15 +38,18 @@ const LibraryPage = ({ onNavigate }) => {
     
     const q = query(
       collection(db, 'notes'),
-      where('user_id', '==', user.uid),
-      orderBy('updated_at', 'desc')
+      where('user_id', '==', user.uid)
     )
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const notesData = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
-      }))
+      })).sort((a, b) => {
+        const da = a.updated_at?.toDate ? a.updated_at.toDate() : new Date(a.updated_at)
+        const db = b.updated_at?.toDate ? b.updated_at.toDate() : new Date(b.updated_at)
+        return db - da
+      })
       setNotes(notesData)
       setLoading(false)
 
@@ -189,7 +194,7 @@ const LibraryPage = ({ onNavigate }) => {
                   >
                     <div className="note-row-title">{note.title || 'Untitled'}</div>
                     <div className="note-row-meta">
-                      {new Date(note.updated_at).toLocaleDateString()}
+                      {new Date(note.updated_at?.toDate ? note.updated_at.toDate() : note.updated_at).toLocaleDateString()}
                     </div>
                   </div>
                   <button 

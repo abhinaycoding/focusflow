@@ -57,8 +57,10 @@ const XPBar = () => {
 
   // Listen for task-completed and session-saved events to award XP
   useEffect(() => {
-    const onTask = () => {
-      window.dispatchEvent(new CustomEvent('xp-earned', { detail: { amount: 10 } }))
+    const onTask = (e) => {
+      if (e.detail?.completed) {
+        window.dispatchEvent(new CustomEvent('xp-earned', { detail: { amount: 10 } }))
+      }
     }
     const onSession = () => {
       window.dispatchEvent(new CustomEvent('xp-earned', { detail: { amount: 5 } }))

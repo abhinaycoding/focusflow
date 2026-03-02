@@ -16,6 +16,7 @@ import CustomCursor from './components/CustomCursor'
 import ProGate from './components/ProGate'
 import ZenMode from './components/ZenMode'
 import CommandPalette from './components/CommandPalette'
+import Layout from './components/Layout'
 import { useAuth } from './contexts/AuthContext'
 import { useTheme } from './contexts/ThemeContext'
 import { useTranslation } from './contexts/LanguageContext'
@@ -74,68 +75,12 @@ function App() {
   return (
     <>
       <CustomCursor />
-
-      <div className="theme-picker-wrap">
-        <button
-          className="theme-toggle"
-          onClick={toggle}
-          title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          aria-label="Toggle theme"
-        >
-          {themes.find(t => t.id === theme)?.icon || 'Theme'}
-        </button>
-        <button
-          className="theme-expand-btn"
-          onClick={() => setThemePanelOpen(!themePanelOpen)}
-          aria-label="Theme options"
-        >
-          {themePanelOpen ? 'Close' : 'Menu'}
-        </button>
-        {themePanelOpen && (
-          <div className="theme-panel">
-            {themes.map(t => (
-              <button
-                key={t.id}
-                className={`theme-swatch ${theme === t.id ? 'theme-swatch--active' : ''}`}
-                onClick={() => { setThemeById(t.id); setThemePanelOpen(false) }}
-                title={t.label}
-              >
-                <span className="theme-swatch-icon">{t.icon}</span>
-                <span className="theme-swatch-label">{t.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
-
-      <div className="lang-picker-wrap">
-        <button
-          className="lang-toggle"
-          onClick={() => setLangPanelOpen(!langPanelOpen)}
-          title="Change Language"
-          aria-label="Change language"
-        >
-          Lang
-        </button>
-        {langPanelOpen && (
-          <div className="lang-panel">
-            {languages.map(l => (
-              <button
-                key={l.code}
-                className={`lang-option ${language === l.code ? 'lang-option--active' : ''}`}
-                onClick={() => { setLanguage(l.code); setLangPanelOpen(false) }}
-              >
-                <span className="lang-flag">{l.flag}</span>
-                <span className="lang-label">{l.label}</span>
-              </button>
-            ))}
-          </div>
-        )}
-      </div>
+      <ZenMode />
 
       <div key={pageToRender} className="page-transition">
         {pageToRender === 'landing' && <LandingPage onNavigate={navigateTo} />}
         {pageToRender === 'auth' && <AuthPage onNavigate={navigateTo} />}
+        {pageToRender === 'pricing' && <PricingPage onNavigate={navigateTo} />}
 
         {pageToRender === 'setup' && (
           <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
@@ -143,65 +88,38 @@ function App() {
           </ProtectedRoute>
         )}
 
-        {pageToRender === 'dashboard' && (
+        {(['dashboard', 'library', 'analytics', 'goals', 'calendar', 'rooms', 'room', 'exams', 'resume'].includes(pageToRender)) && (
           <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <Dashboard onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'library' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <LibraryPage onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'analytics' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <AnalyticsPage onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'goals' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <GoalsPage onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'pricing' && <PricingPage onNavigate={navigateTo} />}
-        {pageToRender === 'calendar' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <CalendarPage onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'rooms' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <StudyRoomsListPage onNavigate={navigateTo} onEnterRoom={enterRoom} />
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'room' && activeRoomId && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <StudyRoomPage
-              roomId={activeRoomId}
-              roomName={activeRoomName}
-              onNavigate={navigateTo}
-              onBack={() => navigateTo('rooms')}
-            />
-          </ProtectedRoute>
-        )}
+            <Layout onNavigate={navigateTo} activeTab={pageToRender} fullBleed={pageToRender === 'room'}>
 
-        {pageToRender === 'exams' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <ProGate feature="Exam Planner" onNavigatePricing={navigateTo}>
-              <ExamPlannerPage onNavigate={navigateTo} />
-            </ProGate>
-          </ProtectedRoute>
-        )}
-        {pageToRender === 'resume' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <ProGate feature="Resume Builder" onNavigatePricing={navigateTo}>
-              <ResumeBuilderPage onNavigate={navigateTo} />
-            </ProGate>
+              {pageToRender === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
+              {pageToRender === 'library' && <LibraryPage onNavigate={navigateTo} />}
+              {pageToRender === 'analytics' && <AnalyticsPage onNavigate={navigateTo} />}
+              {pageToRender === 'goals' && <GoalsPage onNavigate={navigateTo} />}
+              {pageToRender === 'calendar' && <CalendarPage onNavigate={navigateTo} />}
+              {pageToRender === 'rooms' && <StudyRoomsListPage onNavigate={navigateTo} onEnterRoom={enterRoom} />}
+              {pageToRender === 'room' && activeRoomId && (
+                <StudyRoomPage
+                  roomId={activeRoomId}
+                  roomName={activeRoomName}
+                  onNavigate={navigateTo}
+                  onBack={() => navigateTo('rooms')}
+                />
+              )}
+              {pageToRender === 'exams' && (
+                <ProGate feature="Exam Planner" onNavigatePricing={navigateTo}>
+                  <ExamPlannerPage onNavigate={navigateTo} />
+                </ProGate>
+              )}
+              {pageToRender === 'resume' && (
+                <ProGate feature="Resume Builder" onNavigatePricing={navigateTo}>
+                  <ResumeBuilderPage onNavigate={navigateTo} />
+                </ProGate>
+              )}
+            </Layout>
           </ProtectedRoute>
         )}
       </div>
-
-      <ZenMode />
 
       <CommandPalette
         onNavigate={navigateTo}

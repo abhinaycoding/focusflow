@@ -33,17 +33,20 @@ export const NotificationProvider = ({ children }) => {
 
     const q = query(
       collection(db, 'notifications'),
-      where('user_id', '==', user.uid),
-      orderBy('created_at', 'desc')
+      where('user_id', '==', user.uid)
     );
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const data = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data(),
-        // Convert Firestore timestamp to ISO string for consistency with previous implementation
+        // Convert Firestore timestamp to ISO string for consistency
         created_at: doc.data().created_at?.toDate()?.toISOString() || new Date().toISOString()
-      }));
+      })).sort((a, b) => {
+        const da = new Date(a.created_at)
+        const db = new Date(b.created_at)
+        return db - da
+      });
       setNotifications(data);
       setUnreadCount(data.filter(n => !n.read).length);
     }, (err) => {
