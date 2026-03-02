@@ -19,6 +19,9 @@ const AdminDashboard = ({ onNavigate }) => {
   const [broadcast, setBroadcast] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [userSearch, setUserSearch] = useState('');
+  const [isUnlocked, setIsUnlocked] = useState(false);
+  const [passcode, setPasscode] = useState('');
+  const [passcodeError, setPasscodeError] = useState(false);
 
   useEffect(() => {
     const unsubPayments = onSnapshot(
@@ -128,6 +131,49 @@ const AdminDashboard = ({ onNavigate }) => {
   );
 
   const convRate = metrics.totalUsers ? ((metrics.masterUsers / metrics.totalUsers) * 100).toFixed(1) : '0.0';
+
+  const handleUnlock = (e) => {
+    e.preventDefault();
+    if (passcode === '0000') {
+      setIsUnlocked(true);
+      setPasscodeError(false);
+    } else {
+      setPasscodeError(true);
+      setPasscode('');
+      setTimeout(() => setPasscodeError(false), 2000);
+    }
+  };
+
+  if (!isUnlocked) {
+    return (
+      <div className="admin-lock-screen">
+        <div className="admin-lock-box">
+          <div className="admin-lock-icon">🔒</div>
+          <h1 className="admin-lock-title">RESTRICTED ACCESS</h1>
+          <p className="admin-lock-subtitle">Enter Owner Authorization Code</p>
+          
+          <form onSubmit={handleUnlock} className="admin-lock-form">
+            <input 
+              type="password" 
+              className={`admin-passcode-input ${passcodeError ? 'error' : ''}`}
+              placeholder="••••"
+              maxLength={4}
+              value={passcode}
+              onChange={(e) => setPasscode(e.target.value)}
+              autoFocus
+            />
+            <button type="submit" className="admin-btn">AUTHORIZE</button>
+          </form>
+
+          {passcodeError && <div className="admin-lock-error">ACCESS DENIED</div>}
+
+          <button className="admin-abort-btn" onClick={() => onNavigate('dashboard')}>
+            ← Abort & Return
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="admin-dashboard">

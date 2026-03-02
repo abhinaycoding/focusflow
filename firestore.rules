@@ -11,10 +11,10 @@ service cloud.firestore {
       return exists(/databases/$(database)/documents/room_members/$(roomId + '_' + request.auth.uid));
     }
 
-    // 1. Profiles: Users can only read/write their own profiles, Admins can read all
+    // 1. Profiles: Users can only read/write their own profiles, Admins can read/write all
     match /profiles/{userId} {
       allow read: if request.auth != null && (request.auth.uid == userId || isAdmin());
-      allow write: if request.auth != null && request.auth.uid == userId;
+      allow write: if request.auth != null && (request.auth.uid == userId || isAdmin());
     }
 
     // 2. Admin Collections: Only admins can access
@@ -62,7 +62,7 @@ service cloud.firestore {
     match /study_rooms/{roomId} {
       allow read: if request.auth != null && (isMember(roomId) || isAdmin());
       allow create: if request.auth != null;
-      allow update, delete: if request.auth != null && (isMember(roomId) || resource.data.created_by == request.auth.uid);
+      allow update, delete: if request.auth != null && (isMember(roomId) || resource.data.created_by == request.auth.uid || isAdmin());
     }
     match /room_members/{memberId} {
       allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isMember(resource.data.room_id));
