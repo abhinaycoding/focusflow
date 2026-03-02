@@ -1,5 +1,5 @@
 /* ── Force Dark Theme for Admin ── */
-.admin-dashboard {
+.admin-dashboard, .admin-lock-screen {
   --bg-color: #030303;
   --bg-card: rgba(10, 10, 10, 0.7);
   --text-primary: #ffffff;
@@ -7,11 +7,13 @@
   --border: rgba(255, 255, 255, 0.08);
   --primary: #10b981; /* Hacker Green Accent */
   --primary-glow: rgba(16, 185, 129, 0.15);
-  
+  color: var(--text-primary);
+}
+
+.admin-dashboard {
   min-height: calc(100vh - 80px);
   background-color: var(--bg-color);
   background-image: radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.03), transparent 50%);
-  color: var(--text-primary);
   padding-bottom: 5rem;
   font-family: var(--font-sans);
   backdrop-filter: blur(10px);
