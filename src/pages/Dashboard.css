@@ -68,7 +68,7 @@
   margin-bottom: 2rem;
   padding-bottom: 0.75rem;
   border-bottom: 1px solid var(--border);
-  opacity: 0.8;
+  opacity: 1;
 }
 
 /* Glassmorphism for Widgets */
@@ -94,10 +94,12 @@
 }
 
 [data-theme="dark"] .dashboard-widget,
-[data-theme="midnight"] .dashboard-widget {
-  background: rgba(var(--bg-card-rgb, 30, 27, 24), 0.6);
+[data-theme="midnight"] .dashboard-widget,
+[data-theme="forest"] .dashboard-widget,
+[data-theme="rosewood"] .dashboard-widget {
+  background: rgba(var(--bg-card-rgb), 0.6);
   backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(var(--text-primary-rgb, 255, 255, 255), 0.1);
 }
 
 .dashboard-widget.is-editing::before {
@@ -161,7 +163,7 @@
   color: var(--text-primary);
   text-align: left;
   transition: all 0.3s ease;
-  opacity: 0.5;
+  opacity: 0.75;
   cursor: pointer;
 }
 .add-task-trigger:hover { 
