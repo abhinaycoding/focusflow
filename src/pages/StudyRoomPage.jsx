@@ -352,58 +352,40 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
 
   return (
     <>
-      <div className="momentum-container">
-        <div className="momentum-fill" style={{ width: `${groupMomentum}%` }} />
-        <div className="momentum-glow" />
-      </div>
-
-      <div className="floating-emote-layer">
-        {activeEmotes.map(emote => (
-          <div 
-            key={emote.id} 
-            className="floating-emote"
-            style={{ left: `${emote.startX}%` }}
-          >
-            {emote.emoji}
-          </div>
-        ))}
-      </div>
-
-      {/* Premium Ambient Background */}
-      <div className="rooms-ambient-bg">
-        <div className="ambient-orb orb-1"></div>
-        <div className="ambient-orb orb-2"></div>
-        <div className="ambient-orb orb-3"></div>
-      </div>
-
       <div className="flex flex-col h-full overflow-hidden relative z-10">
-        <header className="room-header p-4 border-b border-ink flex justify-between items-center">
-            <div className="flex items-center gap-4">
-               <h1 className="text-xl font-serif text-primary truncate">{roomName}</h1>
-               <div className="flex items-center gap-2 text-xs text-muted font-bold tracking-widest uppercase">
-                  <span className="live-dot" /> Live {members.length}
-               </div>
+        <header className="room-header-v2 px-8 py-6 flex justify-between items-center relative z-20">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-3">
+              <h1 className="text-2xl font-serif italic text-primary leading-tight">{roomName}</h1>
+              <div className="room-code-badge-new" onClick={() => {
+                navigator.clipboard.writeText(roomCode)
+                toast('Room code copied!', 'success')
+              }}>
+                {roomCode}
+              </div>
             </div>
-            <div className="flex items-center gap-3 md:gap-4">
-              <button
-                onClick={() => setShowWhiteboard(true)}
-                className="open-whiteboard-btn flex items-center gap-1.5 md:gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all text-xs font-bold whitespace-nowrap"
-              >
-                <span>🎨</span> <span className="hidden sm:inline">Whiteboard</span>
-              </button>
-              <button onClick={onBack} className="text-xs uppercase tracking-widest font-bold text-muted hover:text-primary transition-colors">
-                ← Exit
-              </button>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="live-dot" />
+              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-muted/60">
+                {members.length} scholars active
+              </span>
             </div>
+          </div>
+
+          <button onClick={onBack} className="exit-btn-minimal">
+            <span className="icon">←</span>
+            <span className="label">Leave Room</span>
+          </button>
         </header>
 
         <main className="room-main flex-1 overflow-hidden">
-          <div className="room-layout h-full">
+          <div className="room-layout">
+
 
             {/* LEFT — Members Panel */}
-            <div className="room-panel room-panel--members flex flex-col h-full border-r border-ink">
-              <div className="p-4 overflow-y-auto flex-1">
-                <div className="members-list grid gap-3">
+            <div className="room-panel room-panel--members">
+              <div className="members-container">
+                <div className="members-list">
                   {members.map(m => {
                     const arche = getArchetype(m.avatar_id)
                     const isMe = m.user_id === guestId
@@ -412,14 +394,16 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
 
                     return (
                       <div key={m.user_id} className={`member-card ${isMe ? 'member-card--you' : ''} ${m.is_zen ? 'member-card--zen' : ''} ${isNudged ? 'member-card--nudged' : ''} member-card--${m.timer_status || 'idle'}`}>
-                        <div className="member-avatar">{arche.emoji}</div>
+                        <div className="member-avatar-container">
+                          <span className="member-emoji">{arche.emoji}</span>
+                        </div>
                         <div className="member-info">
-                          <div className="member-name-row flex justify-between">
-                            <span className="member-name font-bold text-sm truncate">{m.display_name}</span>
-                            {!isMe && <button onClick={() => sendNudge(m)} className="text-xs hover:scale-110 transition-transform">🔔</button>}
+                          <div className="member-name-row">
+                            <span className="member-name">{m.display_name}</span>
+                            {!isMe && <button onClick={() => sendNudge(m)} className="nudge-btn">🔔</button>}
                           </div>
                           <MiniTimerRing status={m.timer_status} secondsLeft={m.seconds_left} isZen={m.is_zen} />
-                          {currentTrack && <div className="text-[10px] text-primary/70 italic mt-1 truncate">🎵 {currentTrack.name}</div>}
+                          {currentTrack && <div className="zen-track-info">🎵 {currentTrack.name}</div>}
                         </div>
                       </div>
                     )
@@ -428,45 +412,35 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
               </div>
             </div>
 
-            {/* Mobile Tasks Toggle FAB */}
-            <button 
-              className="md:hidden fixed bottom-24 right-4 z-[60] bg-primary text-cream p-3 px-5 rounded-full shadow-xl flex items-center gap-2 font-bold uppercase tracking-wider text-xs border border-white/20"
-              onClick={() => setShowTasksMobile(true)}
-              style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}
-            >
-              <span className="text-lg">📝</span> Tasks 
-              {incompletes.length > 0 && <span className="bg-white text-primary rounded-full px-2 py-0.5 text-[10px]">{incompletes.length}</span>}
-            </button>
-
-            {/* CENTER — Shared Tasks (Mobile Drawer / Desktop Panel) */}
+            {/* CENTER — Shared Tasks */}
             {showTasksMobile && (
               <div 
-                className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+                className="mobile-overlay-backdrop"
                 onClick={() => setShowTasksMobile(false)}
               />
             )}
-            <div className={`room-panel room-panel--tasks flex flex-col h-full border-r border-ink ${showTasksMobile ? 'mobile-visible' : ''} z-50`}>
-              <div className="p-4 border-b border-ink/50 flex justify-between items-center bg-bg-card/40 backdrop-blur-md sticky top-0 z-10">
+            <div className={`room-panel room-panel--tasks ${showTasksMobile ? 'mobile-visible' : ''}`}>
+              <div className="panel-header-v2">
                 <div className="flex items-center gap-2">
-                  <span className="font-serif italic text-muted text-lg">Shared Tasks</span>
-                  <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full">{incompletes.length}</span>
+                  <span className="header-title">Shared Tasks</span>
+                  <span className="header-count">{incompletes.length}</span>
                 </div>
                 <button 
-                  className="md:hidden text-muted hover:text-primary transition-colors text-lg" 
+                  className="mobile-close-btn" 
                   onClick={() => setShowTasksMobile(false)}
                 >
                   ✕
                 </button>
               </div>
               
-              <div className="p-4">
+              <div className="task-input-section">
                 <div className="room-task-input-container">
                   <input
                     type="text"
                     value={newTask}
                     onChange={e => setNewTask(e.target.value)}
                     onKeyDown={e => e.key === 'Enter' && addTask()}
-                    placeholder="Add a task..."
+                    placeholder="Add a focus task..."
                     className="room-task-input"
                   />
                   <button onClick={addTask} disabled={addingTask || !newTask.trim()} className="room-task-add-btn">
@@ -475,12 +449,12 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                 </div>
               </div>
 
-              <div className="flex-1 overflow-y-auto p-4 space-y-3 room-tasks-list">
+              <div className="tasks-scroll-area">
                 {tasks.length === 0 ? (
                   <div className="room-tasks-empty">
                     <div className="room-tasks-empty-icon">📝</div>
-                    <p className="font-serif italic text-muted">No shared tasks yet</p>
-                    <p className="text-[10px] uppercase tracking-wider text-muted/50 mt-1">Start collaborating together</p>
+                    <p className="empty-text-main">No shared tasks yet</p>
+                    <p className="empty-text-sub">Collaborate and stay focused together</p>
                   </div>
                 ) : (
                   <>
@@ -510,27 +484,21 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
             </div>
 
             {/* RIGHT — Chat */}
-            <div className="room-panel room-panel--chat" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', overflow: 'hidden', position: 'relative' }}>
-              <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <div className="room-panel room-panel--chat">
+              <div className="room-panel-header">
+                <div className="flex items-center gap-2">
                   <span className="live-dot" />
                   <span className="font-serif italic text-muted">Live Chat</span>
                 </div>
-                {/* Mobile Tasks Toggle */}
-                <button 
-                  className="mobile-tasks-toggle"
-                  onClick={() => setShowTasksMobile(true)}
-                >
-                  <span className="mobile-tasks-badge">{incompletes.length}</span>
-                  📝 Tasks
-                </button>
               </div>
-              <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0 }}>
+              
+              <div className="chat-messages-container">
+
                 {messages.length === 0 && (
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', opacity: 0.45, gap: '0.5rem' }}>
-                    <div style={{ fontSize: '2rem' }}>💬</div>
-                    <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', fontWeight: 700, color: 'var(--text-secondary)' }}>No messages yet</p>
-                    <p style={{ fontSize: '0.65rem', color: 'var(--text-secondary)', textAlign: 'center' }}>Be the first to say something to your study group!</p>
+                  <div className="chat-empty-state">
+                    <div className="chat-empty-icon">💬</div>
+                    <p className="chat-empty-text">No messages yet</p>
+                    <p className="chat-empty-subtext">Be the first to say something to your study group!</p>
                   </div>
                 )}
                 {messages.map((msg, i) => {
@@ -541,73 +509,59 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                   const prevMsg = messages[i - 1]
                   const showName = !prevMsg || prevMsg.user_id !== msg.user_id
                   return (
-                    <div key={msg.id} style={{ display: 'flex', gap: '0.5rem', flexDirection: isMe ? 'row-reverse' : 'row', alignItems: 'flex-end' }}>
-                      <div style={{ width: 28, flexShrink: 0 }}>
+                    <div key={msg.id} className={`chat-msg-row ${isMe ? 'chat-msg-row--you' : ''}`}>
+                      <div className="chat-msg-avatar-wrap">
                         {showName && (
-                          <div style={{ width: 28, height: 28, background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.85rem' }}>
+                          <div className="chat-msg-avatar">
                             {arche.emoji}
                           </div>
                         )}
                       </div>
-                      <div style={{ maxWidth: '72%', display: 'flex', flexDirection: 'column', alignItems: isMe ? 'flex-end' : 'flex-start', gap: '2px' }}>
+                      <div className="chat-msg-content">
                         {showName && (
-                          <span style={{ fontSize: '0.6rem', letterSpacing: '0.05em', color: 'var(--text-secondary)', fontWeight: 700, textTransform: 'uppercase', paddingLeft: isMe ? 0 : '0.25rem', paddingRight: isMe ? '0.25rem' : 0 }}>
+                          <span className="chat-msg-author">
                             {isMe ? 'You' : msg.display_name}
                           </span>
                         )}
-                        <div style={{
-                          padding: '0.5rem 0.9rem',
-                          background: isMe ? 'var(--primary)' : 'var(--bg-card)',
-                          color: isMe ? '#fff' : 'var(--text-primary)',
-                          border: isMe ? 'none' : '1px solid var(--border)',
-                          borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                          fontSize: '0.85rem', lineHeight: 1.45, wordBreak: 'break-word',
-                          boxShadow: isMe ? '0 2px 8px rgba(0,0,0,0.15)' : 'none'
-                        }}>
+                        <div className="chat-msg-bubble">
                           {msg.text}
                         </div>
-                        {timeStr && <span style={{ fontSize: '0.5rem', color: 'var(--text-secondary)', opacity: 0.55, padding: '0 0.25rem' }}>{timeStr}</span>}
+                        {timeStr && <span className="chat-msg-time">{timeStr}</span>}
                       </div>
                     </div>
                   )
                 })}
                 {typingUsers.length > 0 && (
-                  <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', paddingLeft: '2.4rem' }}>
-                    <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: '12px', padding: '0.4rem 0.75rem', display: 'flex', gap: '3px', alignItems: 'center' }}>
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-secondary)', animation: 'typing-dot 1.2s infinite', display: 'inline-block' }} />
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-secondary)', animation: 'typing-dot 1.2s 0.2s infinite', display: 'inline-block' }} />
-                      <span style={{ width: 5, height: 5, borderRadius: '50%', background: 'var(--text-secondary)', animation: 'typing-dot 1.2s 0.4s infinite', display: 'inline-block' }} />
+                  <div className="chat-typing-indicator">
+                    <div className="typing-dots-bubble">
+                      <span className="typing-dot" />
+                      <span className="typing-dot" style={{ animationDelay: '0.2s' }} />
+                      <span className="typing-dot" style={{ animationDelay: '0.4s' }} />
                     </div>
-                    <span style={{ fontSize: '0.6rem', color: 'var(--text-secondary)', fontStyle: 'italic' }}>{typingUsers.join(', ')} typing…</span>
+                    <span className="typing-text">{typingUsers.join(', ')} typing…</span>
                   </div>
                 )}
                 <div ref={chatBottomRef} />
               </div>
-              {/* Input area — pinned at bottom */}
-              <div style={{ flexShrink: 0, padding: '0.75rem 1rem', borderTop: '1px solid var(--border)', background: 'var(--bg-card)' }}>
-                <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.5rem', justifyContent: 'center' }}>
-                  {EMOTES.map(emoji => (
-                    <button key={emoji} onClick={() => broadcastEmote(emoji)}
-                      style={{ fontSize: '1.2rem', transition: 'transform 0.15s', background: 'none', border: 'none', cursor: 'pointer' }}
-                      onMouseEnter={e => e.currentTarget.style.transform = 'scale(1.3)'}
-                      onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
-                    >{emoji}</button>
-                  ))}
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', background: 'var(--bg-color)', border: '1px solid var(--border)', borderRadius: '24px', overflow: 'hidden' }}>
+              {/* Input area area — pinned at bottom */}
+              <div className="chat-input-area">
+                <div className="chat-input-wrapper">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={handleChatInput}
                     onKeyDown={e => e.key === 'Enter' && sendChat()}
                     placeholder="Say something…"
-                    style={{ flex: 1, background: 'transparent', border: 'none', outline: 'none', padding: '0.65rem 1rem', fontSize: '0.85rem', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }}
+                    className="chat-input-field"
                   />
                   <button
                     onClick={sendChat}
                     disabled={!chatInput.trim()}
-                    style={{ padding: '0.65rem 1rem', background: chatInput.trim() ? 'var(--primary)' : 'transparent', color: chatInput.trim() ? '#fff' : 'var(--text-secondary)', fontWeight: 700, fontSize: '0.65rem', letterSpacing: '0.12em', textTransform: 'uppercase', border: 'none', borderRadius: '0 24px 24px 0', cursor: chatInput.trim() ? 'pointer' : 'not-allowed', transition: 'all 0.2s', fontFamily: 'var(--font-sans)' }}
-                  >Send →</button>
+                    className={`chat-send-btn-new ${chatInput.trim() ? 'active' : ''}`}
+                  >
+                    <span>Send</span>
+                    <span className="ml-1">→</span>
+                  </button>
                 </div>
               </div>
             </div>
@@ -615,6 +569,24 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
           </div>
         </main>
       </div>
+
+      {/* FIXED BOTTOM ACTION — Whiteboard */}
+      <button 
+        onClick={() => setShowWhiteboard(true)}
+        className="whiteboard-btn-bottom"
+      >
+        <span className="icon">🎨</span>
+        <span className="text">Collaboration Board</span>
+      </button>
+
+      {/* Mobile Tasks Toggle FAB (Hidden on Desktop via CSS) */}
+      <button 
+        className="mobile-tasks-toggle-btn"
+        onClick={() => setShowTasksMobile(true)}
+      >
+        <span className="icon">📝</span> Tasks 
+        {incompletes.length > 0 && <span className="mobile-tasks-badge">{incompletes.length}</span>}
+      </button>
 
       {showWhiteboard && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>

@@ -19,6 +19,7 @@ import ZenMode from './components/ZenMode'
 import CommandPalette from './components/CommandPalette'
 import Layout from './components/Layout'
 import Confetti from './components/Confetti'
+import MobileBarrier from './components/MobileBarrier'
 import { useAuth } from './contexts/AuthContext'
 import { useTheme } from './contexts/ThemeContext'
 import { useTranslation } from './contexts/LanguageContext'
@@ -91,68 +92,70 @@ function App() {
       <ZenMode />
       <Confetti />
 
-      <div key={pageToRender} className="page-transition">
-        {pageToRender === 'landing' && <LandingPage onNavigate={navigateTo} />}
-        {pageToRender === 'auth' && <AuthPage onNavigate={navigateTo} />}
-        {pageToRender === 'pricing' && <PricingPage onNavigate={navigateTo} />}
+      <MobileBarrier>
+        <div key={pageToRender} className="page-transition">
+          {pageToRender === 'landing' && <LandingPage onNavigate={navigateTo} />}
+          {pageToRender === 'auth' && <AuthPage onNavigate={navigateTo} />}
+          {pageToRender === 'pricing' && <PricingPage onNavigate={navigateTo} />}
 
-        {pageToRender === 'setup' && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <ProfileSetup onNavigate={navigateTo} />
-          </ProtectedRoute>
-        )}
+          {pageToRender === 'setup' && (
+            <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
+              <ProfileSetup onNavigate={navigateTo} />
+            </ProtectedRoute>
+          )}
 
-        {(['dashboard', 'library', 'analytics', 'goals', 'calendar', 'rooms', 'room', 'exams', 'resume', 'profile'].includes(pageToRender)) && (
-          <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
-            <Layout onNavigate={navigateTo} activeTab={pageToRender} fullBleed={pageToRender === 'room'}>
+          {(['dashboard', 'library', 'analytics', 'goals', 'calendar', 'rooms', 'room', 'exams', 'resume', 'profile'].includes(pageToRender)) && (
+            <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
+              <Layout onNavigate={navigateTo} activeTab={pageToRender} fullBleed={pageToRender === 'room'}>
 
-              {pageToRender === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
-              {pageToRender === 'library' && <LibraryPage onNavigate={navigateTo} />}
-              {pageToRender === 'analytics' && <AnalyticsPage onNavigate={navigateTo} />}
-              {pageToRender === 'goals' && <GoalsPage onNavigate={navigateTo} />}
-              {pageToRender === 'calendar' && <CalendarPage onNavigate={navigateTo} />}
-              {pageToRender === 'rooms' && <StudyRoomsListPage onNavigate={navigateTo} onEnterRoom={enterRoom} />}
-              {pageToRender === 'room' && activeRoomId && (
-                <StudyRoomPage
-                  roomId={activeRoomId}
-                  roomName={activeRoomName}
-                  onNavigate={navigateTo}
-                  onBack={() => navigateTo('rooms')}
-                />
-              )}
-              {pageToRender === 'exams' && (
-                <ProGate feature="Exam Planner" onNavigatePricing={navigateTo}>
-                  <ExamPlannerPage onNavigate={navigateTo} />
-                </ProGate>
-              )}
-              {pageToRender === 'resume' && (
-                <ProGate feature="Resume Builder" onNavigatePricing={navigateTo}>
-                  <ResumeBuilderPage onNavigate={navigateTo} />
-                </ProGate>
-              )}
-              {pageToRender === 'profile' && (
-                <PublicProfilePage onNavigate={navigateTo} />
-              )}
-            </Layout>
-          </ProtectedRoute>
-        )}
-      </div>
+                {pageToRender === 'dashboard' && <Dashboard onNavigate={navigateTo} />}
+                {pageToRender === 'library' && <LibraryPage onNavigate={navigateTo} />}
+                {pageToRender === 'analytics' && <AnalyticsPage onNavigate={navigateTo} />}
+                {pageToRender === 'goals' && <GoalsPage onNavigate={navigateTo} />}
+                {pageToRender === 'calendar' && <CalendarPage onNavigate={navigateTo} />}
+                {pageToRender === 'rooms' && <StudyRoomsListPage onNavigate={navigateTo} onEnterRoom={enterRoom} />}
+                {pageToRender === 'room' && activeRoomId && (
+                  <StudyRoomPage
+                    roomId={activeRoomId}
+                    roomName={activeRoomName}
+                    onNavigate={navigateTo}
+                    onBack={() => navigateTo('rooms')}
+                  />
+                )}
+                {pageToRender === 'exams' && (
+                  <ProGate feature="Exam Planner" onNavigatePricing={navigateTo}>
+                    <ExamPlannerPage onNavigate={navigateTo} />
+                  </ProGate>
+                )}
+                {pageToRender === 'resume' && (
+                  <ProGate feature="Resume Builder" onNavigatePricing={navigateTo}>
+                    <ResumeBuilderPage onNavigate={navigateTo} />
+                  </ProGate>
+                )}
+                {pageToRender === 'profile' && (
+                  <PublicProfilePage onNavigate={navigateTo} />
+                )}
+              </Layout>
+            </ProtectedRoute>
+          )}
+        </div>
 
-      <CommandPalette
-        onNavigate={navigateTo}
-        onAction={(action) => {
-          if (action === 'toggle-theme') toggle()
-          if (action === 'zen') {
-            window.dispatchEvent(new CustomEvent('activate-zen'))
-          }
-          if (action === 'focus-task') {
-            navigateTo('dashboard')
-            setTimeout(() => {
-              document.querySelector('.task-add-input')?.focus()
-            }, 300)
-          }
-        }}
-      />
+        <CommandPalette
+          onNavigate={navigateTo}
+          onAction={(action) => {
+            if (action === 'toggle-theme') toggle()
+            if (action === 'zen') {
+              window.dispatchEvent(new CustomEvent('activate-zen'))
+            }
+            if (action === 'focus-task') {
+              navigateTo('dashboard')
+              setTimeout(() => {
+                document.querySelector('.task-add-input')?.focus()
+              }, 300)
+            }
+          }}
+        />
+      </MobileBarrier>
     </>
   )
 }
