@@ -135,33 +135,48 @@ const ExamPlannerPage = ({ onNavigate }) => {
           <div className="exam-left">
             <div className="exam-setup card">
               <h3 className="section-label">Target Examination</h3>
-              <div className="flex gap-2 flex-wrap mb-4">
-                {COMMON_EXAMS.map(e => (
+              <div className="exam-chips-grid">
+                {COMMON_EXAMS.filter(e => e !== 'Custom').map(e => (
                   <button
                     key={e}
-                    onClick={() => setExamName(e)}
-                    className={`exam-tag ${examName === e ? 'active' : ''}`}
+                    onClick={() => {
+                      setExamName(e)
+                      setCustomExam('')
+                    }}
+                    className={`exam-chip ${examName === e ? 'active' : ''}`}
                   >
                     {e}
                   </button>
                 ))}
+                <button
+                  onClick={() => setExamName('Custom')}
+                  className={`exam-chip ${examName === 'Custom' ? 'active' : ''}`}
+                >
+                  Custom
+                </button>
               </div>
+              
               {examName === 'Custom' && (
                 <input
                   type="text"
-                  placeholder="Exam name..."
+                  placeholder="Type your exam name..."
                   value={customExam}
                   onChange={e => setCustomExam(e.target.value)}
-                  className="w-full bg-transparent border-b border-ink outline-none py-2 font-serif text-xl mb-4"
+                  className="w-full bg-transparent border-b border-ink outline-none py-2 font-serif text-xl mb-4 mt-4"
+                  autoFocus
                 />
               )}
-              <h3 className="section-label mt-4">Examination Date</h3>
-              <input
-                type="date"
-                value={examDate}
-                onChange={e => setExamDate(e.target.value)}
-                className="exam-date-input"
-              />
+
+              <h3 className="section-label mt-8">Examination Date</h3>
+              <div className="date-picker-wrapper">
+                <input
+                  type="date"
+                  value={examDate}
+                  onChange={e => setExamDate(e.target.value)}
+                  className="form-input date-input"
+                  style={{ fontSize: '1.25rem' }}
+                />
+              </div>
             </div>
 
             {countdown && !countdown.done ? (

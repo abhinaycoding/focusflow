@@ -23,34 +23,69 @@
   margin-bottom: 2rem;
 }
 
-.exam-tag {
-  font-size: 0.7rem;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  padding: 0.3rem 0.8rem;
+.exam-chips-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+  margin-bottom: 2rem;
+}
+
+.exam-chip {
+  padding: 0.6rem 1.2rem;
+  background: var(--bg-card);
   border: 1px solid var(--border);
-  border-radius: 12px;
-  color: var(--text-secondary);
-  transition: all var(--transition-fast);
-}
-
-.exam-tag:hover, .exam-tag.active {
-  border-color: var(--text-primary);
   color: var(--text-primary);
-  background-color: var(--text-primary);
-  color: var(--bg-card);
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  cursor: pointer;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 2px 2px 0px var(--ink);
 }
 
-.exam-date-input {
+.exam-chip:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 4px 4px 0px var(--primary);
+  border-color: var(--primary);
+}
+
+.exam-chip.active {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  transform: translate(1px, 1px);
+  box-shadow: 0px 0px 0px transparent;
+}
+
+.date-picker-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-top: 0.5rem;
+}
+
+.date-input {
+  width: 100%;
   background: transparent;
   border: none;
-  border-bottom: 1px solid var(--text-primary);
-  padding: 0.5rem 0;
-  font-family: var(--font-sans);
-  font-size: 1rem;
+  border-bottom: 1px solid var(--ink);
+  padding: 0.75rem 0;
   outline: none;
+  font-family: var(--font-serif);
+  font-size: 1.5rem;
   color: var(--text-primary);
-  width: 100%;
+  cursor: pointer;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  filter: invert(var(--calendar-icon-invert, 0.5));
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 4px;
 }
 
 /* Countdown */
