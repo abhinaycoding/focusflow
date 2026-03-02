@@ -238,59 +238,65 @@
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 1.5rem 1rem;
-  border: 1px solid var(--border);
+  padding: 2rem 1rem;
   background: var(--bg-card);
+  border: 1px solid var(--border);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
   text-align: center;
   position: relative;
   overflow: hidden;
+  box-shadow: 2px 2px 0px var(--ink);
 }
 
-.persona-card::before {
+.persona-card:hover {
+  transform: translateY(-5px) translateX(-2px);
+  box-shadow: 6px 6px 0px var(--accent);
+}
+
+.persona-card.active {
+  border-color: var(--accent);
+  transform: translate(1px, 1px);
+  box-shadow: 0px 0px 0px transparent;
+}
+
+.persona-card.active::after {
   content: '';
   position: absolute;
   top: 0;
   left: 0;
   width: 100%;
-  height: 100%;
+  height: 4px;
   background: var(--accent);
-  opacity: 0;
-  transition: opacity 0.3s ease;
-  z-index: 0;
-}
-
-.persona-card.active {
-  border-color: var(--accent);
-  transform: translateY(-4px);
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.05);
-}
-
-.persona-card.active::before {
-  opacity: 0.05;
 }
 
 .persona-emoji {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
+  font-size: 3rem;
+  margin-bottom: 1rem;
   z-index: 1;
+  transition: transform 0.3s ease;
+}
+
+.persona-card:hover .persona-emoji {
+  transform: scale(1.2) rotate(5deg);
 }
 
 .persona-name {
-  font-size: 0.75rem;
+  font-size: 0.8rem;
   font-weight: 800;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
-  margin-bottom: 0.25rem;
+  letter-spacing: 0.1em;
+  margin-bottom: 0.5rem;
   z-index: 1;
+  color: var(--text-primary);
 }
 
 .persona-desc {
-  font-size: 0.6rem;
+  font-size: 0.65rem;
   color: var(--text-secondary);
-  line-height: 1.4;
+  line-height: 1.5;
   z-index: 1;
+  font-style: italic;
 }
 
 .setup-submit {

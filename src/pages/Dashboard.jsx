@@ -98,10 +98,11 @@ const Dashboard = ({ onNavigate }) => {
             
             <button 
               onClick={() => isPro ? setIsEditing(!isEditing) : onNavigate('pricing')}
-              className={`dash-nav-btn ${isEditing ? 'text-primary border-b border-primary' : ''}`}
-              style={{ marginLeft: 'auto' }}
+              className={`exam-chip ${isEditing ? 'active' : ''}`}
+              style={{ marginLeft: 'auto', borderRadius: '24px', fontSize: '0.65rem' }}
             >
-              {isEditing ? t('dashboard.saveLayout') : t('dashboard.customize')} {!isPro && <span className="pro-lock-badge">Pro</span>}
+              {isEditing ? t('dashboard.saveLayout') : t('dashboard.customize')} 
+              {!isPro && <span className="pro-lock-badge" style={{ verticalAlign: 'middle', marginLeft: '0.5rem' }}>Pro</span>}
             </button>
           </div>
         </div>

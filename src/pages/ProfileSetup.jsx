@@ -91,16 +91,19 @@ const ProfileSetup = ({ onNavigate }) => {
           <form onSubmit={handleSaveProfile} className="setup-form">
             <div className="form-group">
               <label className="form-label">Current Status</label>
-              <select 
-                className="form-select"
-                value={studentType} 
-                onChange={(e) => setStudentType(e.target.value)}
-              >
-                <option value="High School">High School</option>
-                <option value="University">University</option>
-                <option value="Competitive Exam">Competitive Exam</option>
-                <option value="Professional Development">Professional Development</option>
-              </select>
+              <div className="exam-chips-grid">
+                {['High School', 'University', 'Competitive Exam', 'Professional Development'].map(type => (
+                  <button
+                    key={type}
+                    type="button"
+                    className={`exam-chip ${studentType === type ? 'active' : ''}`}
+                    onClick={() => setStudentType(type)}
+                    style={{ fontSize: '0.65rem', padding: '0.5rem 1rem' }}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
             </div>
 
             <div className="form-group">

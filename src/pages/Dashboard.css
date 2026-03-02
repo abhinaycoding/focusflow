@@ -76,14 +76,42 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   padding: 1rem 0; /* Align with editorial style */
-  transition: all 0.3s ease;
+  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
+  position: relative;
+}
+
+.dashboard-widget.is-editing {
+  border: 2px dashed var(--primary);
+  background: rgba(var(--primary-rgb, 234, 88, 12), 0.05) !important;
+  animation: widget-float 3s infinite ease-in-out;
+  z-index: 10;
+  cursor: grab;
+}
+
+@keyframes widget-float {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  50% { transform: translateY(-8px) rotate(0.5deg); }
 }
 
 [data-theme="dark"] .dashboard-widget,
 [data-theme="midnight"] .dashboard-widget {
-  background: rgba(var(--bg-card-rgb), 0.6);
-  backdrop-filter: blur(10px);
+  background: rgba(var(--bg-card-rgb, 30, 27, 24), 0.6);
+  backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.dashboard-widget.is-editing::before {
+  content: 'DRAG TO REORDER';
+  position: absolute;
+  top: -10px;
+  right: 20px;
+  background: var(--primary);
+  color: white;
+  font-size: 0.5rem;
+  padding: 2px 8px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  border-radius: 4px;
 }
 
 /* ── Nav buttons ── */
