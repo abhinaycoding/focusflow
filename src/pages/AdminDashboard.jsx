@@ -180,10 +180,17 @@ const AdminDashboard = ({ onNavigate }) => {
       {/* Hero */}
       <section className="admin-hero">
         <div className="container">
-          <div className="admin-title-group">
+          <div className="admin-title-group" style={{ display: 'flex', alignItems: 'center' }}>
             <div className="admin-status-blink" />
-            <h1 className="text-4xl font-serif italic">Owner Command Center</h1>
-            <span className="admin-mono text-xs opacity-40 ml-auto">SECURE SESSION ACTIVE</span>
+            <h1 className="text-4xl font-serif italic m-0">Owner Command Center</h1>
+            <span className="admin-mono text-xs opacity-40 ml-4">SECURE SESSION ACTIVE</span>
+            <button 
+              className="admin-action-btn ml-auto flex items-center gap-2" 
+              style={{ padding: '0.6rem 1.2rem', background: 'rgba(239, 68, 68, 0.1)', borderColor: '#ef4444', color: '#ef4444' }}
+              onClick={() => onNavigate('dashboard')}
+            >
+              <span>← DISCONNECT & RETURN</span>
+            </button>
           </div>
           <div className="admin-tabs">
             {['overview', 'users', 'rooms', 'inbox', 'broadcast'].map(t => (
