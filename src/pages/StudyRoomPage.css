@@ -824,6 +824,8 @@
   .room-panel--members {
     grid-column: 1 / -1; /* Span full width on top */
     min-height: auto;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
   }
   
   .members-list {
@@ -841,6 +843,42 @@
   }
 }
 
+/* ── Mobile Tasks Overlay Toggle Button ── */
+.mobile-tasks-toggle {
+  display: none;
+  align-items: center;
+  gap: 0.4rem;
+  background: color-mix(in srgb, var(--primary) 15%, transparent);
+  color: var(--primary);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  padding: 0.4rem 0.8rem;
+  border-radius: 24px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.mobile-tasks-toggle:hover {
+  background: color-mix(in srgb, var(--primary) 25%, transparent);
+  transform: translateY(-1px);
+}
+
+.mobile-tasks-badge {
+  background: var(--primary);
+  color: var(--cream);
+  min-width: 18px;
+  height: 18px;
+  border-radius: 9px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.65rem;
+  padding: 0 4px;
+}
+
 @media (max-width: 768px) {
   .room-layout {
     grid-template-columns: 1fr;
@@ -851,12 +889,36 @@
     border-radius: 12px;
   }
   
-  .room-panel--tasks {
-    min-height: 400px;
+  .room-panel--chat {
+    height: calc(100vh - 280px); /* Fill remaining space below members */
+    min-height: 480px;
+    grid-row: 2; /* Force Chat into second row */
   }
 
-  .room-panel--chat {
-    height: 500px;
+  .mobile-tasks-toggle {
+    display: flex; /* Show toggle button on mobile */
+  }
+
+  /* Tasks panel turns into a glassmorphism overlay */
+  .room-panel--tasks {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 70vh;
+    background: var(--bg-color);
+    border: 1px solid var(--border);
+    border-radius: 24px 24px 0 0;
+    transform: translateY(105%);
+    transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+    z-index: 200;
+    box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.3);
+    border-right: none;
+  }
+
+  .room-panel--tasks.mobile-visible {
+    transform: translateY(0);
   }
 
   /* Chat UI Mobile Adjustments */

@@ -57,6 +57,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   const [tasks, setTasks] = useState([])
   const [newTask, setNewTask] = useState('')
   const [addingTask, setAddingTask] = useState(false)
+  const [showTasksMobile, setShowTasksMobile] = useState(false)
   const [showWhiteboard, setShowWhiteboard] = useState(false)
   const [roomCode, setRoomCode] = useState('')
   const [messages, setMessages] = useState([])
@@ -420,9 +421,23 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
               </div>
             </div>
 
-            {/* CENTER — Shared Tasks */}
-            <div className="room-panel room-panel--tasks flex flex-col h-full border-r border-ink">
-              <div className="p-4 border-b border-ink font-serif italic text-muted">Shared Tasks</div>
+            {/* CENTER — Shared Tasks (Mobile Drawer / Desktop Panel) */}
+            {showTasksMobile && (
+              <div 
+                className="md:hidden fixed inset-0 z-40 bg-black/40 backdrop-blur-sm transition-opacity"
+                onClick={() => setShowTasksMobile(false)}
+              />
+            )}
+            <div className={`room-panel room-panel--tasks flex flex-col h-full border-r border-ink ${showTasksMobile ? 'mobile-visible' : ''} z-50`}>
+              <div className="p-4 border-b border-ink flex justify-between items-center bg-bg-card md:bg-transparent sticky top-0 z-10">
+                <span className="font-serif italic text-muted">Shared Tasks</span>
+                <button 
+                  className="md:hidden text-muted hover:text-primary transition-colors text-lg" 
+                  onClick={() => setShowTasksMobile(false)}
+                >
+                  ✕
+                </button>
+              </div>
               <div className="p-4 flex gap-2">
                 <input
                   type="text"
@@ -453,10 +468,20 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
             </div>
 
             {/* RIGHT — Chat */}
-            <div className="room-panel room-panel--chat" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', overflow: 'hidden' }}>
-              <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexShrink: 0 }}>
-                <span className="live-dot" />
-                <span className="font-serif italic text-muted">Live Chat</span>
+            <div className="room-panel room-panel--chat" style={{ display: 'flex', flexDirection: 'column', minHeight: 0, height: '100%', overflow: 'hidden', position: 'relative' }}>
+              <div style={{ padding: '1rem', borderBottom: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  <span className="live-dot" />
+                  <span className="font-serif italic text-muted">Live Chat</span>
+                </div>
+                {/* Mobile Tasks Toggle */}
+                <button 
+                  className="mobile-tasks-toggle"
+                  onClick={() => setShowTasksMobile(true)}
+                >
+                  <span className="mobile-tasks-badge">{incompletes.length}</span>
+                  📝 Tasks
+                </button>
               </div>
               <div style={{ flex: 1, overflowY: 'auto', padding: '1rem', display: 'flex', flexDirection: 'column', gap: '0.75rem', minHeight: 0 }}>
                 {messages.length === 0 && (
