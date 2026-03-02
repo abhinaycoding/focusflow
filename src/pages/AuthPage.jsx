@@ -2,6 +2,8 @@ import React, { useState } from 'react'
 import { auth } from '../lib/firebase'
 import {
   signInWithPopup,
+  signInWithRedirect,
+  getRedirectResult,
   GoogleAuthProvider,
   createUserWithEmailAndPassword,
   signInWithEmailAndPassword,
@@ -19,13 +21,37 @@ const AuthPage = ({ onNavigate }) => {
   const [errorMsg, setErrorMsg] = useState('')
   const [successMsg, setSuccessMsg] = useState('')
 
+  // Handle redirect result for Google Sign-In
+  React.useEffect(() => {
+    const handleRedirect = async () => {
+      try {
+        const result = await getRedirectResult(auth)
+        if (result) {
+          // Success is handled by onAuthStateChanged in AuthContext
+        }
+      } catch (err) {
+        console.error('Redirect result error:', err)
+        setErrorMsg(err.message)
+      }
+    }
+    handleRedirect()
+  }, [])
+
   const handleGoogleSignIn = async () => {
     setLoading(true)
     setErrorMsg('')
     try {
       const provider = new GoogleAuthProvider()
-      await signInWithPopup(auth, provider)
-      // Success is handled by onAuthStateChanged in AuthContext
+      // Detect if we are on a mobile device or PWA standalone
+      const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent)
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+
+      if (isMobile || isStandalone) {
+        // Redirect is safer for iOS PWAs and Mobile Safari pop-up blockers
+        await signInWithRedirect(auth, provider)
+      } else {
+        await signInWithPopup(auth, provider)
+      }
     } catch (err) {
       setErrorMsg(err.message)
       setLoading(false)
