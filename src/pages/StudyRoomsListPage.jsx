@@ -149,7 +149,14 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
 
   return (
     <>
-      <main className="rooms-main container">
+      {/* Premium Ambient Background */}
+      <div className="rooms-ambient-bg">
+        <div className="ambient-orb orb-1"></div>
+        <div className="ambient-orb orb-2"></div>
+        <div className="ambient-orb orb-3"></div>
+      </div>
+
+      <main className="rooms-main container relative z-10">
         {/* Tabs */}
         <div className="rooms-tabs">
           <button className={`rooms-tab ${activeTab === 'my' ? 'active' : ''}`} onClick={() => setActiveTab('my')}>My Rooms</button>
@@ -167,7 +174,7 @@ const StudyRoomsListPage = ({ onNavigate, onEnterRoom }) => {
               </div>
             ) : myRooms.length === 0 ? (
               <div className="rooms-empty">
-                <div className="rooms-empty-icon">📚</div>
+                <div className="rooms-empty-icon floating-icon">📚</div>
                 <p className="font-serif italic text-lg">No rooms yet.</p>
                 <p className="text-xs text-muted mt-1 uppercase tracking-widest">Create or join a room to study together.</p>
                 <div className="flex gap-4 mt-6 justify-center">

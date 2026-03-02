@@ -369,7 +369,14 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
         ))}
       </div>
 
-      <div className="flex flex-col h-full overflow-hidden">
+      {/* Premium Ambient Background */}
+      <div className="rooms-ambient-bg">
+        <div className="ambient-orb orb-1"></div>
+        <div className="ambient-orb orb-2"></div>
+        <div className="ambient-orb orb-3"></div>
+      </div>
+
+      <div className="flex flex-col h-full overflow-hidden relative z-10">
         <header className="room-header p-4 border-b border-ink flex justify-between items-center">
             <div className="flex items-center gap-4">
                <h1 className="text-xl font-serif text-primary truncate">{roomName}</h1>
@@ -377,12 +384,12 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                   <span className="live-dot" /> Live {members.length}
                </div>
             </div>
-            <div className="flex items-center gap-4">
+            <div className="flex items-center gap-3 md:gap-4">
               <button
                 onClick={() => setShowWhiteboard(true)}
-                className="open-whiteboard-btn flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all text-xs font-bold"
+                className="open-whiteboard-btn flex items-center gap-1.5 md:gap-2 px-3 py-1.5 rounded-full bg-primary/10 text-primary border border-primary/20 hover:bg-primary/20 transition-all text-xs font-bold whitespace-nowrap"
               >
-                <span>🎨</span> Whiteboard
+                <span>🎨</span> <span className="hidden sm:inline">Whiteboard</span>
               </button>
               <button onClick={onBack} className="text-xs uppercase tracking-widest font-bold text-muted hover:text-primary transition-colors">
                 ← Exit
@@ -421,6 +428,16 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
               </div>
             </div>
 
+            {/* Mobile Tasks Toggle FAB */}
+            <button 
+              className="md:hidden fixed bottom-24 right-4 z-[60] bg-primary text-cream p-3 px-5 rounded-full shadow-xl flex items-center gap-2 font-bold uppercase tracking-wider text-xs border border-white/20"
+              onClick={() => setShowTasksMobile(true)}
+              style={{ boxShadow: '0 8px 30px rgba(0,0,0,0.5)' }}
+            >
+              <span className="text-lg">📝</span> Tasks 
+              {incompletes.length > 0 && <span className="bg-white text-primary rounded-full px-2 py-0.5 text-[10px]">{incompletes.length}</span>}
+            </button>
+
             {/* CENTER — Shared Tasks (Mobile Drawer / Desktop Panel) */}
             {showTasksMobile && (
               <div 
@@ -429,8 +446,11 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
               />
             )}
             <div className={`room-panel room-panel--tasks flex flex-col h-full border-r border-ink ${showTasksMobile ? 'mobile-visible' : ''} z-50`}>
-              <div className="p-4 border-b border-ink flex justify-between items-center bg-bg-card md:bg-transparent sticky top-0 z-10">
-                <span className="font-serif italic text-muted">Shared Tasks</span>
+              <div className="p-4 border-b border-ink/50 flex justify-between items-center bg-bg-card/40 backdrop-blur-md sticky top-0 z-10">
+                <div className="flex items-center gap-2">
+                  <span className="font-serif italic text-muted text-lg">Shared Tasks</span>
+                  <span className="text-[10px] font-bold bg-primary/20 text-primary px-2 py-0.5 rounded-full">{incompletes.length}</span>
+                </div>
                 <button 
                   className="md:hidden text-muted hover:text-primary transition-colors text-lg" 
                   onClick={() => setShowTasksMobile(false)}
@@ -438,32 +458,54 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                   ✕
                 </button>
               </div>
-              <div className="p-4 flex gap-2">
-                <input
-                  type="text"
-                  value={newTask}
-                  onChange={e => setNewTask(e.target.value)}
-                  onKeyDown={e => e.key === 'Enter' && addTask()}
-                  placeholder="Collaborate..."
-                  className="flex-1 bg-ink/30 border border-ink rounded px-3 py-1 text-sm text-primary outline-none focus:border-primary/50"
-                />
-                <button onClick={addTask} disabled={addingTask || !newTask.trim()} className="text-primary font-bold">+</button>
+              
+              <div className="p-4">
+                <div className="room-task-input-container">
+                  <input
+                    type="text"
+                    value={newTask}
+                    onChange={e => setNewTask(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addTask()}
+                    placeholder="Add a task..."
+                    className="room-task-input"
+                  />
+                  <button onClick={addTask} disabled={addingTask || !newTask.trim()} className="room-task-add-btn">
+                    +
+                  </button>
+                </div>
               </div>
-              <div className="flex-1 overflow-y-auto p-4 space-y-2">
-                {incompletes.map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 bg-ink/10 rounded group">
-                    <button className="w-4 h-4 rounded-full border border-primary/50" onClick={() => toggleTask(task)} />
-                    <span className="text-sm flex-1">{task.title}</span>
-                    <button onClick={() => deleteTask(task.id)} className="opacity-0 group-hover:opacity-100 text-xs text-danger transition-opacity">✕</button>
+
+              <div className="flex-1 overflow-y-auto p-4 space-y-3 room-tasks-list">
+                {tasks.length === 0 ? (
+                  <div className="room-tasks-empty">
+                    <div className="room-tasks-empty-icon">📝</div>
+                    <p className="font-serif italic text-muted">No shared tasks yet</p>
+                    <p className="text-[10px] uppercase tracking-wider text-muted/50 mt-1">Start collaborating together</p>
                   </div>
-                ))}
-                {completes.map(task => (
-                  <div key={task.id} className="flex items-center gap-3 p-2 bg-primary/5 rounded opacity-50">
-                    <button className="w-4 h-4 rounded-full bg-primary/20 flex items-center justify-center text-[10px]" onClick={() => toggleTask(task)}>✓</button>
-                    <span className="text-sm flex-1 line-through">{task.title}</span>
-                    <button onClick={() => deleteTask(task.id)} className="text-xs text-danger">✕</button>
-                  </div>
-                ))}
+                ) : (
+                  <>
+                    {incompletes.map(task => (
+                      <div key={task.id} className="room-task-item group">
+                        <button className="room-task-check" onClick={() => toggleTask(task)} />
+                        <span className="room-task-title">{task.title}</span>
+                        <button onClick={() => deleteTask(task.id)} className="room-task-delete">✕</button>
+                      </div>
+                    ))}
+                    
+                    {completes.length > 0 && (
+                      <>
+                        <div className="room-tasks-divider">Completed ({completes.length})</div>
+                        {completes.map(task => (
+                          <div key={task.id} className="room-task-item room-task-item--done">
+                            <button className="room-task-check room-task-check--done" onClick={() => toggleTask(task)}>✓</button>
+                            <span className="room-task-title">{task.title}</span>
+                            <button onClick={() => deleteTask(task.id)} className="room-task-delete">✕</button>
+                          </div>
+                        ))}
+                      </>
+                    )}
+                  </>
+                )}
               </div>
             </div>
 
@@ -575,7 +617,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
       </div>
 
       {showWhiteboard && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(8px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
           <div style={{ width: '100%', height: '100%', maxWidth: '1200px', background: 'var(--bg-card)', border: '1px solid var(--ink)', overflow: 'hidden', display: 'flex', flexDirection: 'column', boxShadow: '8px 8px 0 var(--ink)' }}>
             <SharedWhiteboard
               roomId={roomId}

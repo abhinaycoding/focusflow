@@ -16,11 +16,15 @@ const MONTH_NAMES = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct'
 const DAY_LABELS = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
 // Color intensity levels (5 levels)
-const getColorLevel = (hours) => {
-  if (hours === 0) return 0
-  if (hours < 0.5) return 1
-  if (hours < 1.5) return 2
-  if (hours < 3) return 3
+const getColorLevel = (data) => {
+  if (!data || (data.hours === 0 && data.tasks === 0)) return 0
+  
+  // Combined score: 1 hour = 1 point, 1 task = 0.75 points
+  const score = data.hours + (data.tasks * 0.75)
+
+  if (score < 0.5) return 1
+  if (score < 1.5) return 2
+  if (score < 3) return 3
   return 4
 }
 
@@ -86,16 +90,37 @@ const StudyHeatmap = () => {
           where('user_id', '==', user.uid),
           where('created_at', '>=', Timestamp.fromDate(yearAgo))
         )
-        const snap = await getDocs(q)
-        const sessions = snap.docs.map(doc => doc.data())
+        
+        // Also fetch personal tasks (filter date client-side to avoid composite index error)
+        const tq = query(
+          collection(db, 'tasks'),
+          where('user_id', '==', user.uid)
+        )
 
-        // Aggregate hours per day
+        const [sessSnap, taskSnap] = await Promise.all([
+          getDocs(q),
+          getDocs(tq)
+        ])
+        
+        const sessions = sessSnap.docs.map(doc => doc.data())
+        const tasks = taskSnap.docs.map(doc => doc.data())
+
+        // Aggregate hours and tasks per day
         const byDay = {}
         ;(sessions || []).forEach(s => {
           const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
           const dateKey = d.toISOString().split('T')[0]
-          if (!byDay[dateKey]) byDay[dateKey] = 0
-          byDay[dateKey] += (s.duration_seconds || 0) / 3600
+          if (!byDay[dateKey]) byDay[dateKey] = { hours: 0, tasks: 0 }
+          byDay[dateKey].hours += (s.duration_seconds || 0) / 3600
+        })
+
+        ;(tasks || []).forEach(t => {
+          if (!t.completed) return // Only count completed tasks
+          const d = t.created_at?.toDate ? t.created_at.toDate() : new Date(t.created_at)
+          if (d < yearAgo) return // Client-side date filter
+          const dateKey = d.toISOString().split('T')[0]
+          if (!byDay[dateKey]) byDay[dateKey] = { hours: 0, tasks: 0 }
+          byDay[dateKey].tasks += 1
         })
 
         setDayData(byDay)
@@ -112,14 +137,21 @@ const StudyHeatmap = () => {
   const handleCellHover = (e, d) => {
     if (!d.date) return
     const rect = containerRef.current.getBoundingClientRect()
-    const hours = dayData[d.date] || 0
+    const data = dayData[d.date] || { hours: 0, tasks: 0 }
     const dateLabel = d.dateObj.toLocaleDateString('en-US', {
       weekday: 'short', month: 'short', day: 'numeric', year: 'numeric'
     })
+    
+    // Construct tooltip text
+    let textParts = []
+    if (data.hours > 0) textParts.push(`${data.hours.toFixed(1)}h studied`)
+    if (data.tasks > 0) textParts.push(`${data.tasks} tasks done`)
+    const text = textParts.length > 0 ? textParts.join(', ') : 'No activity'
+
     setTooltip({
       x: e.clientX - rect.left,
       y: e.clientY - rect.top - 40,
-      text: `${hours.toFixed(1)}h studied`,
+      text,
       date: dateLabel,
     })
   }
@@ -127,13 +159,15 @@ const StudyHeatmap = () => {
   const handleCellLeave = () => setTooltip(null)
 
   // Stats
-  const totalHoursYear = Object.values(dayData).reduce((a, b) => a + b, 0)
-  const activeDays = Object.values(dayData).filter(h => h > 0).length
+  const totalHoursYear = Object.values(dayData).reduce((a, b) => a + (b.hours || 0), 0)
+  const totalTasksYear = Object.values(dayData).reduce((a, b) => a + (b.tasks || 0), 0)
+  const activeDays = Object.values(dayData).filter(d => (d.hours > 0 || d.tasks > 0)).length
   const longestStreak = (() => {
     let max = 0, current = 0
     const sortedDays = days.filter(d => d.date).map(d => d.date).sort()
     for (let i = 0; i < sortedDays.length; i++) {
-      if (dayData[sortedDays[i]] > 0) {
+      const dData = dayData[sortedDays[i]] || { hours: 0, tasks: 0 }
+      if (dData.hours > 0 || dData.tasks > 0) {
         current++
         max = Math.max(max, current)
       } else {
@@ -167,6 +201,11 @@ const StudyHeatmap = () => {
           <span className="heatmap-stat">
             <strong>{totalHoursYear.toFixed(0)}</strong>h total
           </span>
+          {totalTasksYear > 0 && (
+            <span className="heatmap-stat">
+              <strong>{totalTasksYear}</strong> tasks
+            </span>
+          )}
           <span className="heatmap-stat">
             <strong>{activeDays}</strong> active days
           </span>
@@ -213,8 +252,8 @@ const StudyHeatmap = () => {
           {/* Grid cells */}
           {days.map((d, i) => {
             if (!d.date) return null
-            const hours = dayData[d.date] || 0
-            const level = getColorLevel(hours)
+            const data = dayData[d.date] || { hours: 0, tasks: 0 }
+            const level = getColorLevel(data)
             return (
               <rect
                 key={i}

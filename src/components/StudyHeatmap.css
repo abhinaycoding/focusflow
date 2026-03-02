@@ -99,19 +99,19 @@
   opacity: 0.4;
 }
 .heatmap-level-1 {
-  fill: var(--primary);
+  fill: #39d353;
   opacity: 0.25;
 }
 .heatmap-level-2 {
-  fill: var(--primary);
-  opacity: 0.5;
+  fill: #39d353;
+  opacity: 0.50;
 }
 .heatmap-level-3 {
-  fill: var(--primary);
+  fill: #39d353;
   opacity: 0.75;
 }
 .heatmap-level-4 {
-  fill: var(--primary);
+  fill: #39d353;
   opacity: 1;
 }
 
