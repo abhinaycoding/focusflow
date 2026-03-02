@@ -14,6 +14,8 @@ const AdminDashboard = ({ onNavigate }) => {
   const [rooms, setRooms] = useState([]);
   const [users, setUsers] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
+  const [supportTickets, setSupportTickets] = useState([]);
+  const [isMaintenance, setIsMaintenance] = useState(false);
   const [broadcast, setBroadcast] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const [userSearch, setUserSearch] = useState('');
@@ -47,6 +49,21 @@ const AdminDashboard = ({ onNavigate }) => {
       }, err => console.warn('rooms:', err.message)
     );
 
+    const unsubTickets = onSnapshot(
+      query(collection(db, 'support_tickets'), orderBy('created_at', 'desc')),
+      (snap) => {
+        setSupportTickets(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      }, err => console.warn('tickets:', err.message)
+    );
+
+    const unsubSettings = onSnapshot(
+      doc(db, 'settings', 'global'),
+      (snap) => {
+        if (snap.exists()) setIsMaintenance(snap.data().maintenance_active === true);
+      }, err => console.warn('settings:', err.message)
+    );
+
+
     // Platform stats
     const fetchStats = async () => {
       try {
@@ -59,7 +76,7 @@ const AdminDashboard = ({ onNavigate }) => {
     };
     fetchStats();
 
-    return () => { unsubPayments(); unsubProfiles(); unsubRooms(); };
+    return () => { unsubPayments(); unsubProfiles(); unsubRooms(); unsubTickets(); unsubSettings(); };
   }, []);
 
   const handleGrantPro = async (userId, grant) => {
@@ -90,6 +107,22 @@ const AdminDashboard = ({ onNavigate }) => {
     } catch { toast('Failed. Create settings/global doc first.', 'error'); }
   };
 
+  const handleToggleMaintenance = async () => {
+    try {
+      await setDoc(doc(db, 'settings', 'global'), {
+        maintenance_active: !isMaintenance
+      }, { merge: true });
+      toast(isMaintenance ? 'Platform online.' : '🚨 MAINTENANCE MODE ENGAGED.', isMaintenance ? 'success' : 'error');
+    } catch { toast('Failed to toggle maintenance mode.', 'error'); }
+  };
+
+  const handleResolveTicket = async (id, isResolved) => {
+    try {
+      await updateDoc(doc(db, 'support_tickets', id), { resolved: isResolved });
+      toast('Ticket status updated.', 'success');
+    } catch { toast('Failed to update ticket.', 'error'); }
+  };
+
   const filteredUsers = users.filter(u =>
     !userSearch || (u.full_name || '').toLowerCase().includes(userSearch.toLowerCase())
   );
@@ -107,8 +140,9 @@ const AdminDashboard = ({ onNavigate }) => {
             <span className="admin-mono text-xs opacity-40 ml-auto">SECURE SESSION ACTIVE</span>
           </div>
           <div className="admin-tabs">
-            {['overview', 'users', 'rooms', 'broadcast'].map(t => (
+            {['overview', 'users', 'rooms', 'inbox', 'broadcast'].map(t => (
               <button key={t} className={`admin-tab-btn ${activeTab === t ? 'active' : ''}`} onClick={() => setActiveTab(t)}>
+                {t === 'inbox' && supportTickets.filter(tkt => !tkt.resolved).length > 0 && <span className="admin-badge-red mr-2">{supportTickets.filter(tkt => !tkt.resolved).length}</span>}
                 {t.charAt(0).toUpperCase() + t.slice(1)}
               </button>
             ))}
@@ -255,24 +289,82 @@ const AdminDashboard = ({ onNavigate }) => {
           </div>
         )}
 
+        {/* ── Inbox Tab ── */}
+        {activeTab === 'inbox' && (
+          <div className="admin-panel">
+            <div className="admin-panel-header">
+              <h2 className="admin-panel-title">Support Inbox</h2>
+              <span className="admin-mono text-[10px] opacity-50">{supportTickets.filter(t => !t.resolved).length} UNREAD</span>
+            </div>
+            <div className="admin-feed">
+              {supportTickets.map(tkt => (
+                <div key={tkt.id} className="admin-feed-item flex-col items-start gap-4">
+                  <div className="flex w-full justify-between items-center">
+                    <div className="flex items-center gap-2">
+                       <span className="font-bold">{tkt.user_name || 'Anonymous'}</span>
+                       <span className="admin-mono text-[10px] opacity-50">{tkt.user_email || 'No email'}</span>
+                       {tkt.resolved && <span className="admin-badge-green">RESOLVED</span>}
+                       {!tkt.resolved && <span className="admin-badge-pro" style={{ background: '#ef444420', color: '#ef4444' }}>ACTION REQUIRED</span>}
+                    </div>
+                    <span className="feed-time">
+                      {tkt.created_at?.seconds ? new Date(tkt.created_at.seconds * 1000).toLocaleString() : 'Just now'}
+                    </span>
+                  </div>
+                  <div className="text-sm opacity-80 pl-2 border-l-2 border-primary">
+                    {tkt.message}
+                  </div>
+                  <button 
+                    className={`admin-action-btn ${tkt.resolved ? 'revoke' : 'grant'} mt-2`}
+                    onClick={() => handleResolveTicket(tkt.id, !tkt.resolved)}
+                  >
+                    {tkt.resolved ? 'Mark Unresolved' : 'Mark Resolved'}
+                  </button>
+                </div>
+              ))}
+              {supportTickets.length === 0 && <div className="text-center py-8 opacity-40 italic text-sm">Inbox zero. You have no messages.</div>}
+            </div>
+          </div>
+        )}
+
         {/* ── Broadcast Tab ── */}
         {activeTab === 'broadcast' && (
-          <div className="admin-panel" style={{ maxWidth: '600px' }}>
-            <div className="admin-panel-header">
-              <h2 className="admin-panel-title">Manifesto Broadcast</h2>
-            </div>
-            <div className="admin-broadcast-area">
-              <div className="admin-input-group">
-                <label>System-wide Announcement</label>
-                <textarea
-                  className="admin-textarea" rows="4"
-                  placeholder="Type your message to all scholars..."
-                  value={broadcast}
-                  onChange={e => setBroadcast(e.target.value)}
-                />
+          <div className="admin-main-grid">
+            <div className="admin-panel">
+              <div className="admin-panel-header">
+                <h2 className="admin-panel-title">Manifesto Broadcast</h2>
               </div>
-              <button className="admin-btn" onClick={handleBroadcast}>⚡ Transmit to All Scholars</button>
-              <p className="text-xs opacity-40 mt-3">Message will appear as a banner on all users' dashboards.</p>
+              <div className="admin-broadcast-area">
+                <div className="admin-input-group">
+                  <label>System-wide Announcement</label>
+                  <textarea
+                    className="admin-textarea" rows="4"
+                    placeholder="Type your message to all scholars..."
+                    value={broadcast}
+                    onChange={e => setBroadcast(e.target.value)}
+                  />
+                </div>
+                <button className="admin-btn" onClick={handleBroadcast}>⚡ Transmit to All Scholars</button>
+                <p className="text-xs opacity-40 mt-3">Message will appear as a banner on all users' dashboards.</p>
+              </div>
+            </div>
+
+            <div className="admin-panel">
+               <div className="admin-panel-header">
+                  <h2 className="admin-panel-title" style={{ color: '#ef4444' }}>God Mode Controls</h2>
+               </div>
+               <div className="p-8">
+                  <h3 className="font-bold text-lg mb-2">Maintenance Mode</h3>
+                  <p className="text-sm opacity-60 mb-6">
+                    Activating Maintenance Mode will forcefully disconnect all current users (except Admins) and present them with a cinematic lockdown screen. The platform will be unusable by scholars until disengaged.
+                  </p>
+                  <button 
+                    className={`admin-btn w-full font-bold ${isMaintenance ? 'bg-green-600' : 'bg-red-600'}`} 
+                    onClick={handleToggleMaintenance}
+                    style={{ background: isMaintenance ? '#10b981' : '#ef4444', color: '#ffffff' }}
+                  >
+                    {isMaintenance ? '🔓 DISENGAGE MAINTENANCE' : '🚨 ENGAGE MAINTENANCE MODE'}
+                  </button>
+               </div>
             </div>
           </div>
         )}
