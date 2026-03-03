@@ -1,16 +1,13 @@
 import { useState } from 'react'
 import { usePlan } from '../contexts/PlanContext'
 import { useAuth } from '../contexts/AuthContext'
-import { useTheme } from '../contexts/ThemeContext'
 import { useTranslation } from '../contexts/LanguageContext'
 import './Sidebar.css'
 
 const Sidebar = ({ activeTab, onNavigate }) => {
   const { isPro } = usePlan()
   const { signOut, isAdmin } = useAuth()
-  const { theme, setThemeById, toggle, isDark, themes } = useTheme()
   const { language, setLanguage, languages } = useTranslation()
-  const [themePanelOpen, setThemePanelOpen] = useState(false)
   const [langPanelOpen, setLangPanelOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
@@ -99,15 +96,8 @@ const Sidebar = ({ activeTab, onNavigate }) => {
           {/* Settings / Controls */}
           <div className="sidebar-settings">
             <button 
-              className={`nav-item ${themePanelOpen || langPanelOpen ? 'active' : ''}`}
-              onClick={() => {
-                if (themePanelOpen || langPanelOpen) {
-                  setThemePanelOpen(false);
-                  setLangPanelOpen(false);
-                } else {
-                  setThemePanelOpen(true);
-                }
-              }}
+              className={`nav-item ${langPanelOpen ? 'active' : ''}`}
+              onClick={() => setLangPanelOpen(p => !p)}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -116,45 +106,16 @@ const Sidebar = ({ activeTab, onNavigate }) => {
               <span className="nav-label">Settings</span>
             </button>
 
-            {(themePanelOpen || langPanelOpen) && (
+            {langPanelOpen && (
               <div className="sidebar-sub-panel">
-                <div className="flex justify-between items-center p-2 border-b border-white/5 mb-2">
-                  <button 
-                    className={`text-[10px] font-bold uppercase tracking-widest ${themePanelOpen ? 'text-primary' : 'text-muted'}`}
-                    onClick={() => { setThemePanelOpen(true); setLangPanelOpen(false); }}
-                  >
-                    Theme
-                  </button>
-                  <button 
-                    className={`text-[10px] font-bold uppercase tracking-widest ${langPanelOpen ? 'text-primary' : 'text-muted'}`}
-                    onClick={() => { setLangPanelOpen(true); setThemePanelOpen(false); }}
-                  >
-                    Language
-                  </button>
-                </div>
-
-                {themePanelOpen && (
-                  <div className="flex flex-col gap-1">
-                    {themes.map(t => (
-                      <button key={t.id} className={`sub-panel-item ${theme === t.id ? 'active' : ''}`} onClick={() => setThemeById(t.id)}>
-                        {t.icon} {t.label}
-                      </button>
-                    ))}
-                    <button className="sub-panel-item mt-2 border-t border-white/5 pt-2" onClick={toggle}>
-                      🌓 Toggle Mode
+                <div style={{ padding: '0.25rem 0.5rem 0.5rem', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.5 }}>Language</div>
+                <div className="flex flex-col gap-1">
+                  {languages.map(l => (
+                    <button key={l.code} className={`sub-panel-item ${language === l.code ? 'active' : ''}`} onClick={() => setLanguage(l.code)}>
+                      {l.flag} {l.label}
                     </button>
-                  </div>
-                )}
-
-                {langPanelOpen && (
-                  <div className="flex flex-col gap-1">
-                    {languages.map(l => (
-                      <button key={l.code} className={`sub-panel-item ${language === l.code ? 'active' : ''}`} onClick={() => setLanguage(l.code)}>
-                        {l.flag} {l.label}
-                      </button>
-                    ))}
-                  </div>
-                )}
+                  ))}
+                </div>
               </div>
             )}
           </div>
