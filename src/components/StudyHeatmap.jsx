@@ -79,19 +79,18 @@ const StudyHeatmap = () => {
     if (!user?.uid) return
 
     const fetchData = async () => {
-      try {
-        // Fetch ALL sessions for this user (we'll filter client-side)
-        const yearAgo = new Date()
-        yearAgo.setFullYear(yearAgo.getFullYear() - 1)
-        yearAgo.setHours(0, 0, 0, 0)
+      const yearAgo = new Date()
+      yearAgo.setFullYear(yearAgo.getFullYear() - 1)
+      yearAgo.setHours(0, 0, 0, 0)
 
+      try {
+        // Fetch ALL sessions for this user (filter date client-side to avoid composite index requirement)
         const q = query(
           collection(db, 'sessions'), 
-          where('user_id', '==', user.uid),
-          where('created_at', '>=', Timestamp.fromDate(yearAgo))
+          where('user_id', '==', user.uid)
         )
         
-        // Also fetch personal tasks (filter date client-side to avoid composite index error)
+        // Also fetch personal tasks
         const tq = query(
           collection(db, 'tasks'),
           where('user_id', '==', user.uid)
@@ -107,17 +106,18 @@ const StudyHeatmap = () => {
 
         // Aggregate hours and tasks per day
         const byDay = {}
-        ;(sessions || []).forEach(s => {
+        sessions.forEach(s => {
           const d = s.created_at?.toDate ? s.created_at.toDate() : new Date(s.created_at)
+          if (d < yearAgo) return
           const dateKey = d.toISOString().split('T')[0]
           if (!byDay[dateKey]) byDay[dateKey] = { hours: 0, tasks: 0 }
           byDay[dateKey].hours += (s.duration_seconds || 0) / 3600
         })
 
-        ;(tasks || []).forEach(t => {
-          if (!t.completed) return // Only count completed tasks
+        tasks.forEach(t => {
+          if (!t.completed) return
           const d = t.created_at?.toDate ? t.created_at.toDate() : new Date(t.created_at)
-          if (d < yearAgo) return // Client-side date filter
+          if (d < yearAgo) return
           const dateKey = d.toISOString().split('T')[0]
           if (!byDay[dateKey]) byDay[dateKey] = { hours: 0, tasks: 0 }
           byDay[dateKey].tasks += 1
