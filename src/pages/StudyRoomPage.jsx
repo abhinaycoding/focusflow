@@ -26,6 +26,7 @@ import SharedWhiteboard from '../components/study/SharedWhiteboard'
 import ChannelList from '../components/study/ChannelList'
 import VoiceChannel from '../components/study/VoiceChannel'
 import CollabDoc from '../components/study/CollabDoc'
+import UserProfileCard from '../components/study/UserProfileCard'
 import './StudyRoomPage.css'
 
 // Mini timer ring SVG for each member
@@ -77,6 +78,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   const [roomOwnerId, setRoomOwnerId] = useState(null)
   // mention autocomplete
   const [mentionQuery, setMentionQuery] = useState(null)
+  const [viewingProfile, setViewingProfile] = useState(null) // { userId, displayName, photoUrl, avatarId }
   const chatBottomRef = useRef(null)
   const typingTimerRef = useRef(null)
 
@@ -530,7 +532,17 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
 
                     return (
                       <div key={m.user_id} className={`member-card ${isMe ? 'member-card--you' : ''} ${m.is_zen ? 'member-card--zen' : ''} ${isNudged ? 'member-card--nudged' : ''} member-card--${m.timer_status || 'idle'}`}>
-                        <div className="member-avatar-container">
+                        <div
+                          className="member-avatar-container"
+                          style={{ cursor: 'pointer' }}
+                          title={`View ${m.display_name}'s profile`}
+                          onClick={() => setViewingProfile({
+                            userId: m.user_id,
+                            displayName: m.display_name,
+                            photoUrl: m.photo_url || null,
+                            avatarId: m.avatar_id || 'owl'
+                          })}
+                        >
                           {m.photo_url ? (
                             <img src={m.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
                           ) : (
@@ -707,7 +719,17 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                     >
                       <div className="chat-msg-avatar-wrap">
                         {showName && (
-                          <div className="chat-msg-avatar" style={{ overflow: 'hidden' }}>
+                          <div
+                            className="chat-msg-avatar"
+                            style={{ overflow: 'hidden', cursor: 'pointer' }}
+                            title={`View ${msg.display_name}'s profile`}
+                            onClick={() => setViewingProfile({
+                              userId: msg.user_id,
+                              displayName: msg.display_name,
+                              photoUrl: msg.photo_url || null,
+                              avatarId: msg.avatar_id || 'owl'
+                            })}
+                          >
                             {msg.photo_url ? (
                               <img src={msg.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                             ) : (
@@ -824,6 +846,17 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
             />
           </div>
         </div>
+      )}
+
+      {/* User Profile Card Modal */}
+      {viewingProfile && (
+        <UserProfileCard
+          userId={viewingProfile.userId}
+          displayName={viewingProfile.displayName}
+          photoUrl={viewingProfile.photoUrl}
+          avatarId={viewingProfile.avatarId}
+          onClose={() => setViewingProfile(null)}
+        />
       )}
     </>
   )
