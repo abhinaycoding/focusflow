@@ -3,9 +3,8 @@ import Navigation from '../components/Navigation'
 import { ARCHETYPES } from '../constants/archetypes'
 import { useTranslation } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { db, storage } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { doc, setDoc } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import './ProfileSetup.css'
 
 const ProfileSetup = ({ onNavigate }) => {
@@ -26,21 +25,34 @@ const ProfileSetup = ({ onNavigate }) => {
   const handleFileChange = async (e) => {
     const file = e.target.files[0]
     if (!file) return
-    if (file.size > 2 * 1024 * 1024) {
-      setErrorMsg('Image size must be less than 2MB.')
-      return
-    }
     setUploadingAvatar(true)
     setErrorMsg('')
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}`)
-      await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(storageRef)
-      setPhotoUrl(url)
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = () => {
+          const canvas = document.createElement('canvas')
+          const size = 150
+          canvas.width = size
+          canvas.height = size
+          const ctx = canvas.getContext('2d')
+
+          const scale = Math.max(size / img.width, size / img.height)
+          const x = (size / scale - img.width) / 2
+          const y = (size / scale - img.height) / 2
+          ctx.drawImage(img, x, y, img.width, img.height, 0, 0, size, size)
+
+          const base64Url = canvas.toDataURL('image/jpeg', 0.8)
+          setPhotoUrl(base64Url)
+          setUploadingAvatar(false)
+        }
+        img.src = event.target.result
+      }
+      reader.readAsDataURL(file)
     } catch (err) {
-      setErrorMsg('Failed to upload image.')
+      setErrorMsg('Failed to process image.')
       console.error(err)
-    } finally {
       setUploadingAvatar(false)
     }
   }

@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { db, storage } from '../lib/firebase'
+import { db } from '../lib/firebase'
 import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore'
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext'
 import { LEVELS } from '../components/XPBar'
@@ -50,21 +49,48 @@ const PublicProfilePage = ({ onNavigate }) => {
   const handlePhotoUpload = async (e) => {
     const file = e.target.files?.[0]
     if (!file || !user?.uid) return
-    if (file.size > 2 * 1024 * 1024) { setPhotoError('Image must be under 2MB'); return }
     setPhotoError('')
     setUploadingPhoto(true)
+
     try {
-      const storageRef = ref(storage, `avatars/${user.uid}`)
-      await uploadBytes(storageRef, file)
-      const url = await getDownloadURL(storageRef)
-      await setDoc(doc(db, 'profiles', user.uid), { photo_url: url }, { merge: true })
-      await refreshProfile()
+      // Compress image using Canvas
+      const reader = new FileReader()
+      reader.onload = (event) => {
+        const img = new Image()
+        img.onload = async () => {
+          const canvas = document.createElement('canvas')
+          const size = 150 // 150x150 pixels for tiny profile picture
+          canvas.width = size
+          canvas.height = size
+          const ctx = canvas.getContext('2d')
+          
+          // Cover crop
+          const scale = Math.max(size / img.width, size / img.height)
+          const x = (size / scale - img.width) / 2
+          const y = (size / scale - img.height) / 2
+          ctx.drawImage(img, x, y, img.width, img.height, 0, 0, size, size)
+          
+          // Compress to Base64 JPEG
+          const base64Url = canvas.toDataURL('image/jpeg', 0.8)
+          
+          try {
+            await setDoc(doc(db, 'profiles', user.uid), { photo_url: base64Url }, { merge: true })
+            await refreshProfile()
+            setUploadingPhoto(false)
+            if (photoInputRef.current) photoInputRef.current.value = ''
+          } catch (err) {
+            console.error(err)
+            setPhotoError('Failed to save to profile.')
+            setUploadingPhoto(false)
+          }
+        }
+        img.src = event.target.result
+      }
+      reader.readAsDataURL(file)
     } catch (err) {
       console.error(err)
-      setPhotoError('Upload failed. Make sure Firebase Storage is set up.')
-    } finally {
+      setPhotoError('Image processing failed.')
       setUploadingPhoto(false)
-      if (photoInputRef.current) photoInputRef.current.value = ''
     }
   }
 
