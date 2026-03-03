@@ -74,7 +74,7 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
           </main>
         </div>
       </div>
-      {activeTab !== 'room' && <SupportWidget />}
+      {['dashboard', 'settings', 'profile', 'admin', 'pricing', 'customize', 'landing', 'goals', 'analytics'].includes(activeTab) && <SupportWidget />}
     </div>
   );
 };
