@@ -182,7 +182,11 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
   const leaveVoice = useCallback(async () => {
     cancelAnimationFrame(animFrameRef.current)
     localStreamRef.current?.getTracks().forEach(t => t.stop())
-    audioContextRef.current?.close()
+    // Guard against closing an already-closed AudioContext (InvalidStateError)
+    if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+      audioContextRef.current.close().catch(() => {})
+    }
+    audioContextRef.current = null
     
     Object.values(peersRef.current).forEach(pc => pc.close())
     peersRef.current = {}
