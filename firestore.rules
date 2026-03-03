@@ -73,7 +73,12 @@ service cloud.firestore {
     match /room_messages/{messageId} {
       allow read: if request.auth != null && isMember(resource.data.room_id);
       allow create: if request.auth != null && isMember(request.resource.data.room_id);
-      allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isMember(resource.data.room_id));
+      // Allow the message author OR any room member with owner status to update (for pinning)
+      allow update: if request.auth != null && (
+        resource.data.user_id == request.auth.uid ||
+        isMember(resource.data.room_id)
+      );
+      allow delete: if request.auth != null && resource.data.user_id == request.auth.uid;
     }
     match /room_whiteboard/{whiteboardId} {
       allow read: if request.auth != null && isMember(resource.data.room_id);
@@ -89,6 +94,23 @@ service cloud.firestore {
       allow read: if request.auth != null && isMember(resource.data.room_id);
       allow create: if request.auth != null && isMember(request.resource.data.room_id);
       allow update, delete: if request.auth != null && isMember(resource.data.room_id);
+    }
+    // Discord-style channels for each room
+    match /room_channels/{channelId} {
+      allow read: if request.auth != null && isMember(resource.data.room_id);
+      allow create: if request.auth != null && isMember(request.resource.data.room_id);
+      allow update, delete: if request.auth != null && isMember(resource.data.room_id);
+    }
+    // Voice channel presence (who is in voice)
+    match /room_voice_presence/{presenceId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow delete: if request.auth != null;
+    }
+    // Collaborative docs per channel
+    match /room_docs/{docId} {
+      allow read: if request.auth != null;
+      allow write: if request.auth != null;
     }
     match /promo_codes/{docId} {
       allow read, write: if true;

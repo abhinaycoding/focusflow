@@ -248,6 +248,17 @@ const PricingPage = ({ onNavigate }) => {
                   <div className="brutal-icon" style={{ backgroundColor: '#14b8a6' }}>🎧</div>
                   <span className="font-bold text-sm" style={{ color: '#000' }}>Priority Support</span>
                 </div>
+                {/* ✨ NEW FEATURES */}
+                <div className="brutal-feature-item" style={{ borderTop: '2px solid #000', paddingTop: '0.5rem', marginTop: '0.25rem' }}>
+                  <div className="brutal-icon" style={{ backgroundColor: '#6d28d9' }}>🎨</div>
+                  <span className="font-bold text-sm" style={{ color: '#000' }}>Nitro Profile Studio</span>
+                  <span style={{ fontSize: '0.5rem', fontWeight: 900, background: '#6d28d9', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px', marginLeft: 'auto' }}>NEW</span>
+                </div>
+                <div className="brutal-feature-item">
+                  <div className="brutal-icon" style={{ backgroundColor: '#5865F2' }}>#</div>
+                  <span className="font-bold text-sm" style={{ color: '#000' }}>Discord Room Channels</span>
+                  <span style={{ fontSize: '0.5rem', fontWeight: 900, background: '#5865F2', color: '#fff', padding: '0.1rem 0.4rem', borderRadius: '4px', marginLeft: 'auto' }}>NEW</span>
+                </div>
               </div>
 
               <div className="promo-container">

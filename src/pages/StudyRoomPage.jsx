@@ -23,6 +23,9 @@ import { useToast } from '../contexts/ToastContext'
 import { getArchetype } from '../constants/archetypes'
 import { getZenTrack } from '../constants/zenTracks'
 import SharedWhiteboard from '../components/study/SharedWhiteboard'
+import ChannelList from '../components/study/ChannelList'
+import VoiceChannel from '../components/study/VoiceChannel'
+import CollabDoc from '../components/study/CollabDoc'
 import './StudyRoomPage.css'
 
 // Mini timer ring SVG for each member
@@ -65,6 +68,15 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   const [typingUsers, setTypingUsers] = useState([])
   const [activeEmotes, setActiveEmotes] = useState([])
   const [groupMomentum, setGroupMomentum] = useState(0)
+  // Channel state
+  const [channels, setChannels] = useState([])
+  const [activeChannel, setActiveChannel] = useState({ id: 'general', name: 'general', icon: '#', type: 'text', locked: false })
+  const [channelListCollapsed, setChannelListCollapsed] = useState(false)
+  const [pinnedMessages, setPinnedMessages] = useState([])
+  const [showPinned, setShowPinned] = useState(false)
+  const [roomOwnerId, setRoomOwnerId] = useState(null)
+  // mention autocomplete
+  const [mentionQuery, setMentionQuery] = useState(null)
   const chatBottomRef = useRef(null)
   const typingTimerRef = useRef(null)
 
@@ -72,14 +84,43 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   const guestId = user?.uid
   const guestProfile = profile
 
-  // 1. Fetch Room Code
+  // 1. Fetch Room Code + Owner
   useEffect(() => {
     if (!roomId) return
     const unsubscribe = onSnapshot(doc(db, 'study_rooms', roomId), (snap) => {
-      if (snap.exists()) setRoomCode(snap.data().code)
+      if (snap.exists()) {
+        setRoomCode(snap.data().code)
+        setRoomOwnerId(snap.data().created_by || null)
+      }
     })
     return () => unsubscribe()
   }, [roomId])
+
+  // 1b. Fetch room_channels
+  useEffect(() => {
+    if (!roomId) return
+    const q = query(collection(db, 'room_channels'), where('room_id', '==', roomId))
+    const unsub = onSnapshot(q, (snap) => {
+      const list = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+      setChannels(list)
+    })
+    return () => unsub()
+  }, [roomId])
+
+  // 1c. Pinned messages for active channel
+  useEffect(() => {
+    if (!roomId) return
+    const q = query(
+      collection(db, 'room_messages'),
+      where('room_id', '==', roomId),
+      where('channel_id', '==', activeChannel.id),
+      where('pinned', '==', true)
+    )
+    const unsub = onSnapshot(q, (snap) => {
+      setPinnedMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    })
+    return () => unsub()
+  }, [roomId, activeChannel.id])
 
   // 2. Presence Heartbeat & Membership Sync
   useEffect(() => {
@@ -156,12 +197,13 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
     return () => unsubscribe()
   }, [roomId])
 
-  // 4. Chat Messages — sort client-side so no composite index needed immediately
+  // 4. Chat Messages — scoped to active channel
   useEffect(() => {
     if (!roomId) return
     const q = query(
       collection(db, 'room_messages'),
       where('room_id', '==', roomId),
+      where('channel_id', '==', activeChannel.id),
       limit(80)
     )
     const unsubscribe = onSnapshot(q, (snapshot) => {
@@ -176,7 +218,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
       console.error('Chat listener error:', err.message)
     })
     return () => unsubscribe()
-  }, [roomId])
+  }, [roomId, activeChannel.id])
 
   // 4b. Typing Presence (write own status, read others)
   const broadcastTyping = () => {
@@ -280,27 +322,46 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
 
   const sendChat = async () => {
     if (!chatInput.trim() || !user?.uid) return
+    // Block non-owners from writing to announcement channels
+    if (activeChannel.type === 'announcement' && user.uid !== roomOwnerId) {
+      toast('Only the room owner can post in #announcements.', 'info')
+      return
+    }
     const text = chatInput.trim()
     setChatInput('')
     clearTyping()
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
+    // Detect @mentions
+    const mentionMatch = text.match(/@(\w+)/g)
+    const mentions = mentionMatch ? mentionMatch.map(m => m.slice(1)) : []
     try {
       await addDoc(collection(db, 'room_messages'), {
         room_id: roomId,
+        channel_id: activeChannel.id,
         user_id: user.uid,
         display_name: displayName,
         avatar_id: profile?.avatar_id || 'owl',
         text,
+        mentions,
+        pinned: false,
         created_at: serverTimestamp(),
       })
     } catch (err) { console.error(err) }
   }
 
   const handleChatInput = (e) => {
-    setChatInput(e.target.value)
+    const val = e.target.value
+    setChatInput(val)
     broadcastTyping()
     if (typingTimerRef.current) clearTimeout(typingTimerRef.current)
     typingTimerRef.current = setTimeout(() => clearTyping(), 3000)
+    // @mention detection
+    const lastWord = val.split(' ').pop()
+    if (lastWord.startsWith('@') && lastWord.length > 1) {
+      setMentionQuery(lastWord.slice(1).toLowerCase())
+    } else {
+      setMentionQuery(null)
+    }
   }
 
   const broadcastEmote = async (emoji) => {
@@ -354,6 +415,31 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
     }
   }, [roomId, user?.uid])
 
+  const pinMessage = async (msgId) => {
+    try {
+      await updateDoc(doc(db, 'room_messages', msgId), { pinned: true })
+      toast('Message pinned 📌', 'success')
+    } catch (err) { toast('Failed to pin.', 'error') }
+  }
+
+  const unpinMessage = async (msgId) => {
+    try {
+      await updateDoc(doc(db, 'room_messages', msgId), { pinned: false })
+    } catch (err) {}
+  }
+
+  const insertMention = (name) => {
+    const words = chatInput.split(' ')
+    words[words.length - 1] = `@${name} `
+    setChatInput(words.join(' '))
+    setMentionQuery(null)
+  }
+
+  const isOwner = user?.uid === roomOwnerId
+  const mentionSuggestions = mentionQuery
+    ? members.filter(m => m.user_id !== user?.uid && m.display_name.toLowerCase().includes(mentionQuery))
+    : []
+
   const EMOTES = ['🔥', '💯', '🧠', '☕', '💡', '🚀']
   const completes = tasks.filter(t => t.completed)
   const incompletes = tasks.filter(t => !t.completed)
@@ -361,36 +447,75 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   return (
     <>
       <div className="flex flex-col h-full overflow-hidden relative z-10">
-        <header className="room-header-v2 px-8 py-6 flex justify-between items-center relative z-20">
-          <div className="flex flex-col">
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-serif italic text-primary leading-tight">{roomName}</h1>
-              <div className="room-code-badge-new" onClick={() => {
+        <header className="room-header-v2 px-6 py-4 flex justify-between items-center relative z-20 border-b border-white/5" style={{ background: 'var(--bg-color)' }}>
+          {/* LEFT: Channel Info */}
+          <div className="flex items-center gap-3 flex-1">
+            <div className="flex items-center gap-2 text-white">
+              <span className="text-xl text-gray-400 font-light mt-[-2px]">#</span>
+              <h1 className="text-lg font-bold font-sans tracking-wide">{activeChannel.name}</h1>
+            </div>
+            
+            {/* Divider */}
+            <div className="w-px h-4 bg-white/10 mx-1" />
+
+            {/* Pinned button */}
+            {pinnedMessages.length > 0 && (
+              <button
+                className="room-pin-btn"
+                onClick={() => setShowPinned(!showPinned)}
+              >
+                📌 {pinnedMessages.length} Pinned
+              </button>
+            )}
+          </div>
+
+          {/* CENTER: Room Name & Code */}
+          <div className="flex items-center justify-center gap-3 flex-1 flex-shrink-0">
+            <span className="text-sm font-bold text-gray-200 uppercase tracking-widest text-center shadow-sm">
+              {roomName}
+            </span>
+            <div 
+              className="room-code-badge-sleek" 
+              onClick={() => {
                 navigator.clipboard.writeText(roomCode)
                 toast('Room code copied!', 'success')
-              }}>
-                {roomCode}
-              </div>
-            </div>
-            <div className="flex items-center gap-2 mt-1">
-              <span className="live-dot" />
-              <span className="text-[10px] uppercase tracking-[0.2em] font-black text-muted/60">
-                {members.length} scholars active
-              </span>
+              }}
+              title="Click to copy Room Code"
+            >
+              {roomCode}
             </div>
           </div>
 
-          <button onClick={onBack} className="exit-btn-minimal">
-            <span className="icon">←</span>
-            <span className="label">Leave Room</span>
-          </button>
+          {/* RIGHT: Actions */}
+          <div className="flex items-center justify-end gap-3 flex-1">
+            <button onClick={() => setShowWhiteboard(true)} className="whiteboard-btn-minimal">
+              <span className="icon">🎨</span>
+              <span className="label">Board</span>
+            </button>
+            <button onClick={onBack} className="exit-btn-minimal">
+              <span className="icon">←</span>
+              <span className="label">Leave</span>
+            </button>
+          </div>
         </header>
 
         <main className="room-main flex-1 overflow-hidden">
-          <div className="room-layout">
+          <div className="room-layout room-layout--discord">
+
+            {/* Discord Channel Sidebar */}
+            <ChannelList
+              roomId={roomId}
+              activeChannelId={activeChannel.id}
+              onSelectChannel={(ch) => { setActiveChannel(ch); setShowPinned(false) }}
+              channels={channels}
+              isOwner={isOwner}
+              collapsed={channelListCollapsed}
+              onToggle={() => setChannelListCollapsed(!channelListCollapsed)}
+            />
 
 
-            {/* LEFT — Members Panel */}
+            <div className="room-right-sidebar">
+            {/* RIGHT SIDEBAR — Members Panel */}
             <div className="room-panel room-panel--members">
               <div className="members-container">
                 <div className="members-list">
@@ -490,23 +615,74 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                 )}
               </div>
             </div>
+            </div> {/* close room-right-sidebar */}
 
-            {/* RIGHT — Chat */}
+            {/* MAIN CONTENT AREA — shows Chat, Voice, or Doc based on channel type */}
+            {activeChannel.type === 'voice' ? (
+              <div className="room-panel room-panel--chat">
+                <div className="room-panel-header">
+                  <div className="flex items-center gap-2">
+                    <span className="live-dot" style={{ background: '#23a559' }} />
+                    <span className="channel-active-name">{activeChannel.icon} {activeChannel.name}</span>
+                    <span className="channel-voice-tag">Voice Channel</span>
+                  </div>
+                </div>
+                <VoiceChannel
+                  roomId={roomId}
+                  channelId={activeChannel.id}
+                  channelName={activeChannel.name}
+                  user={{ uid: user?.uid || guestId, displayName, avatarId: profile?.avatar_id || 'owl' }}
+                  members={members}
+                />
+              </div>
+            ) : activeChannel.type === 'doc' ? (
+              <div className="room-panel room-panel--chat">
+                <CollabDoc
+                  roomId={roomId}
+                  channelId={activeChannel.id}
+                  channelName={activeChannel.name}
+                  user={{ uid: user?.uid || guestId, displayName }}
+                />
+              </div>
+            ) : (
             <div className="room-panel room-panel--chat">
+              {/* Pinned Messages Panel */}
+              {showPinned && pinnedMessages.length > 0 && (
+                <div className="pinned-messages-panel">
+                  <div className="pinned-panel-header">
+                    <span>📌 Pinned Messages</span>
+                    <button onClick={() => setShowPinned(false)}>✕</button>
+                  </div>
+                  {pinnedMessages.map(pm => (
+                    <div key={pm.id} className="pinned-msg-item">
+                      <span className="pinned-msg-author">{pm.display_name}:</span>
+                      <span className="pinned-msg-text">{pm.text}</span>
+                      {isOwner && (
+                        <button className="pinned-unpin-btn" onClick={() => unpinMessage(pm.id)}>unpin</button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+
               <div className="room-panel-header">
                 <div className="flex items-center gap-2">
                   <span className="live-dot" />
-                  <span className="font-serif italic text-muted">Live Chat</span>
+                  <span className="channel-active-name">
+                    {activeChannel.icon} #{activeChannel.name}
+                  </span>
+                  {activeChannel.type === 'announcement' && (
+                    <span className="channel-announcement-tag">Announcements</span>
+                  )}
                 </div>
               </div>
-              
-              <div className="chat-messages-container">
 
+              <div className="chat-messages-container">
                 {messages.length === 0 && (
                   <div className="chat-empty-state">
-                    <div className="chat-empty-icon">💬</div>
-                    <p className="chat-empty-text">No messages yet</p>
-                    <p className="chat-empty-subtext">Be the first to say something to your study group!</p>
+                    <div className="chat-empty-icon">{activeChannel.icon === '#' ? '💬' : activeChannel.icon}</div>
+                    <p className="chat-empty-text">#{activeChannel.name}</p>
+                    <p className="chat-empty-subtext">This is the beginning of #{activeChannel.name}. Say something!</p>
                   </div>
                 )}
                 {messages.map((msg, i) => {
@@ -516,25 +692,36 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                   const timeStr = ts ? ts.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''
                   const prevMsg = messages[i - 1]
                   const showName = !prevMsg || prevMsg.user_id !== msg.user_id
+                  const hasMention = msg.mentions?.includes(displayName)
                   return (
-                    <div key={msg.id} className={`chat-msg-row ${isMe ? 'chat-msg-row--you' : ''}`}>
+                    <div
+                      key={msg.id}
+                      className={`chat-msg-row ${isMe ? 'chat-msg-row--you' : ''} ${hasMention ? 'chat-msg-row--mentioned' : ''}`}
+                    >
                       <div className="chat-msg-avatar-wrap">
                         {showName && (
-                          <div className="chat-msg-avatar">
-                            {arche.emoji}
-                          </div>
+                          <div className="chat-msg-avatar">{arche.emoji}</div>
                         )}
                       </div>
                       <div className="chat-msg-content">
                         {showName && (
-                          <span className="chat-msg-author">
-                            {isMe ? 'You' : msg.display_name}
-                          </span>
+                          <span className="chat-msg-author">{isMe ? 'You' : msg.display_name}</span>
                         )}
                         <div className="chat-msg-bubble">
-                          {msg.text}
+                          {/* Render @mentions with highlight */}
+                          {msg.text.split(/(@\w+)/g).map((part, pi) =>
+                            part.startsWith('@')
+                              ? <span key={pi} className="chat-mention">{part}</span>
+                              : part
+                          )}
+                          {msg.pinned && <span className="chat-pin-indicator"> 📌</span>}
                         </div>
-                        {timeStr && <span className="chat-msg-time">{timeStr}</span>}
+                        <div className="chat-msg-actions">
+                          {timeStr && <span className="chat-msg-time">{timeStr}</span>}
+                          {isOwner && !msg.pinned && (
+                            <button className="chat-pin-btn" onClick={() => pinMessage(msg.id)}>📌 Pin</button>
+                          )}
+                        </div>
                       </div>
                     </div>
                   )
@@ -551,20 +738,40 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                 )}
                 <div ref={chatBottomRef} />
               </div>
-              {/* Input area area — pinned at bottom */}
+
+              {/* Input area — pinned at bottom */}
               <div className="chat-input-area">
+                {/* @mention autocomplete */}
+                {mentionSuggestions.length > 0 && (
+                  <div className="mention-popup">
+                    {mentionSuggestions.map(m => (
+                      <button
+                        key={m.user_id}
+                        className="mention-popup-item"
+                        onMouseDown={() => insertMention(m.display_name)}
+                      >
+                        <span className="mention-popup-emoji">{getArchetype(m.avatar_id).emoji}</span>
+                        <span className="mention-popup-name">{m.display_name}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {activeChannel.type === 'announcement' && user?.uid !== roomOwnerId && (
+                  <div className="channel-readonly-notice">📢 Only the room owner can post in #announcements.</div>
+                )}
                 <div className="chat-input-wrapper">
                   <input
                     type="text"
                     value={chatInput}
                     onChange={handleChatInput}
                     onKeyDown={e => e.key === 'Enter' && sendChat()}
-                    placeholder="Say something…"
+                    placeholder={`Message #${activeChannel.name}${activeChannel.type === 'announcement' && user?.uid !== roomOwnerId ? ' (read-only)' : '…'}`}
                     className="chat-input-field"
+                    disabled={activeChannel.type === 'announcement' && user?.uid !== roomOwnerId}
                   />
                   <button
                     onClick={sendChat}
-                    disabled={!chatInput.trim()}
+                    disabled={!chatInput.trim() || (activeChannel.type === 'announcement' && user?.uid !== roomOwnerId)}
                     className={`chat-send-btn-new ${chatInput.trim() ? 'active' : ''}`}
                   >
                     <span>Send</span>
@@ -573,19 +780,13 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                 </div>
               </div>
             </div>
+            )} {/* end voice/doc/text ternary */}
 
           </div>
         </main>
       </div>
 
-      {/* FIXED BOTTOM ACTION — Whiteboard */}
-      <button 
-        onClick={() => setShowWhiteboard(true)}
-        className="whiteboard-btn-bottom"
-      >
-        <span className="icon">🎨</span>
-        <span className="text">Collaboration Board</span>
-      </button>
+
 
       {/* Mobile Tasks Toggle FAB (Hidden on Desktop via CSS) */}
       <button 

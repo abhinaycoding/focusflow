@@ -21,6 +21,132 @@
   overflow: hidden;
 }
 
+/* Discord layout: channels sidebar + main chat + right sidebar (members/tasks) */
+.room-layout--discord {
+  display: flex !important;
+  flex-direction: row;
+  height: 100%;
+  padding: 0;
+  gap: 0;
+  background: var(--bg-color); /* Matches the outer background for a flush look */
+}
+
+/* 1. Left Sidebar — smooth collapse */
+.room-layout--discord > .channel-list {
+  order: 1;
+  border-right: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: 0;
+  background: color-mix(in srgb, var(--bg-card) 40%, var(--bg-color));
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+              min-width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  /* width controlled by the .collapsed class on .channel-list itself */
+}
+
+/* Expanded state */
+.room-layout--discord > .channel-list:not(.collapsed) {
+  width: 240px;
+  min-width: 240px;
+}
+
+/* Collapsed state — narrows to icon-only width */
+.room-layout--discord > .channel-list.collapsed {
+  width: 56px;
+  min-width: 56px;
+}
+
+/* 2. Main Chat Area — flex:1 means it ALWAYS fills remaining space naturally */
+.room-layout--discord > .room-panel--chat {
+  order: 2;
+  flex: 1;
+  min-width: 0;  /* critical — allows flexbox to shrink/grow past content width */
+  border: none !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  backdrop-filter: none !important;
+  height: 100%;
+  transition: flex 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.room-layout--discord > .room-panel--chat:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* 3. Right Sidebar (Members & Tasks) */
+.room-right-sidebar {
+  order: 3;
+  width: 320px;
+  display: flex;
+  flex-direction: column;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  background: color-mix(in srgb, var(--bg-card) 40%, var(--bg-color));
+  height: 100%;
+}
+
+/* Strip default 'bubble' styles from panels inside the Discord layout */
+.room-right-sidebar .room-panel {
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+.room-right-sidebar .room-panel:hover {
+  transform: none;
+  box-shadow: none;
+  background: transparent;
+}
+
+/* Split right sidebar */
+.room-right-sidebar .room-panel--members {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  border-bottom: 2px solid rgba(0, 0, 0, 0.3); /* clear separator */
+  min-height: 0;
+}
+.room-right-sidebar .room-panel--tasks {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Fix inner padding for flush, professional integration */
+.room-layout--discord .panel-header-v2,
+.room-layout--discord .room-panel-header {
+  padding: 1rem 1.25rem;
+  background: transparent;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.room-layout--discord .members-container,
+.room-layout--discord .task-input-section,
+.room-layout--discord .tasks-scroll-area,
+.room-layout--discord .chat-messages-container {
+  padding: 1rem 1.25rem;
+}
+
+.whiteboard-btn-minimal {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 0.85rem;
+  background: rgba(var(--primary-rgb), 0.1);
+  color: var(--primary);
+  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.whiteboard-btn-minimal:hover {
+  background: var(--primary);
+  color: white;
+  transform: translateY(-1px);
+}
+
 /* ── Header v2 ── */
 .room-header-v2 {
   background: transparent;
@@ -28,24 +154,29 @@
   box-sizing: border-box;
 }
 
-.room-code-badge-new {
+.room-code-badge-sleek {
   font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--primary);
-  background: rgba(var(--primary-rgb), 0.1);
-  padding: 0.35rem 0.75rem;
-  border-radius: 12px;
-  border: 1px solid rgba(var(--primary-rgb), 0.2);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  background: rgba(255, 255, 255, 0.08);
+  padding: 0.25rem 0.5rem;
+  border-radius: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
   cursor: pointer;
-  transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.2s ease;
+  user-select: none;
 }
 
-.room-code-badge-new:hover {
-  background: var(--primary);
+.room-code-badge-sleek:hover {
+  background: rgba(255, 255, 255, 0.15);
   color: white;
-  transform: scale(1.05);
-  box-shadow: 0 5px 15px rgba(var(--primary-rgb), 0.3);
+  border-color: rgba(255, 255, 255, 0.25);
+}
+
+.room-code-badge-sleek:active {
+  transform: scale(0.95);
 }
 
 .whiteboard-btn-premium {
@@ -186,64 +317,67 @@
     inset 0 1px 1px rgba(255, 255, 255, 0.1);
 }
 
-.member-card--you {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 5%, transparent);
+.member-card {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  background: transparent;
+  transition: background 0.15s ease;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  margin: 0 0.5rem;
 }
 
-.member-card--focusing {
-  border-color: var(--success);
-  box-shadow: 0 0 20px color-mix(in srgb, var(--success) 10%, transparent);
+.member-card:hover {
+  background: rgba(255, 255, 255, 0.06);
 }
 
-.member-card--focusing::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--success) 10%, transparent) 0%, transparent 70%);
-  animation: member-aura-pulse 4s infinite ease-in-out;
-  pointer-events: none;
+/* Status variants */
+.member-card--focusing .member-avatar-container {
+  box-shadow: 0 0 0 2px var(--success);
 }
-
-@keyframes member-aura-pulse {
-  0%, 100% { opacity: 0.3; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.1); }
-}
-
-.member-card--done {
-  border-color: rgba(var(--primary-rgb), 0.3);
+.member-card--done .member-avatar-container {
+  box-shadow: 0 0 0 2px rgba(var(--primary-rgb), 0.5);
 }
 
 .member-avatar {
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   z-index: 1;
-  background: transparent; /* Ensure video shows through */
+  background: transparent;
 }
 
 .member-avatar-container {
   position: relative;
-  width: 64px;
-  height: 64px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
-  border-radius: 20px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.05);
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  font-size: 2rem;
+  font-size: 1.25rem;
 }
 
 .member-card--zen .member-avatar-container {
-  border-color: var(--primary);
-  box-shadow: 0 0 15px rgba(var(--primary-rgb), 0.2);
+  box-shadow: 0 0 0 2px var(--primary);
   animation: zen-breathe 3s infinite ease-in-out;
 }
 
 @keyframes zen-breathe {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.member-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .member-name-row {
@@ -256,6 +390,9 @@
   font-size: 0.85rem;
   font-weight: 600;
   color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .nudge-btn {
@@ -263,69 +400,57 @@
   border: none;
   font-size: 0.9rem;
   cursor: pointer;
-  opacity: 0.3;
+  opacity: 0;
   transition: all 0.2s;
   padding: 0.2rem;
   line-height: 1;
 }
 
+.member-card:hover .nudge-btn {
+  opacity: 0.5;
+}
+
 .nudge-btn:hover {
-  opacity: 1;
+  opacity: 1 !important;
   transform: scale(1.2) rotate(-10deg);
 }
 
 .member-you-tag {
-  font-size: 10px;
-  color: var(--primary);
-  font-weight: 700;
-  text-transform: uppercase;
-  margin-left: 0.25rem;
+  display: none; /* Removed for cleaner look */
 }
 
 .member-status-row {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  margin-top: 0.35rem;
+  margin-top: 0.15rem;
 }
 
 .mini-timer-wrap {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  background: color-mix(in srgb, var(--bg-card) 40%, transparent);
-  padding: 0.2rem 0.6rem;
-  border-radius: 20px;
-  border: 1px solid var(--border);
+  gap: 0.35rem;
 }
 
 .mini-timer-text {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 0.75rem;
-  font-weight: 700;
-  letter-spacing: 0.05em;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 500;
+  color: var(--text-secondary);
 }
 
 .zen-mini-tag {
-  font-size: 0.6rem;
+  font-size: 0.55rem;
   font-weight: 800;
-  background: var(--primary);
-  color: var(--cream);
-  padding: 0 0.4rem;
-  border-radius: 4px;
-  letter-spacing: 0.1em;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   animation: pulse-zen-mini 2s infinite;
 }
 
 @keyframes pulse-zen-mini {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.7; transform: scale(0.95); }
-}
-
-.member-card--zen {
-  border-color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 3%, transparent);
-  box-shadow: inset 0 0 15px color-mix(in srgb, var(--primary) 5%, transparent);
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
 }
 
 .member-card--zen .member-avatar {
@@ -661,42 +786,7 @@
   margin-top: 0.5rem;
 }
 
-/* ── Fixed Bottom Collaboration Button ── */
-.whiteboard-btn-bottom {
-  position: fixed;
-  bottom: 1.5rem;
-  left: 2rem;
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  padding: 1rem 1.5rem;
-  background: rgba(var(--bg-card-rgb), 0.6);
-  backdrop-filter: blur(20px) saturate(180%);
-  -webkit-backdrop-filter: blur(20px) saturate(180%);
-  border: 1px solid rgba(var(--primary-rgb), 0.3);
-  border-radius: 99px;
-  color: var(--primary);
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  font-size: 0.85rem;
-  cursor: pointer;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-  transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
-}
 
-.whiteboard-btn-bottom:hover {
-  background: var(--primary);
-  color: white;
-  border-color: var(--primary);
-  transform: translateY(-5px) scale(1.02);
-  box-shadow: 0 15px 40px rgba(var(--primary-rgb), 0.4);
-}
-
-.whiteboard-btn-bottom .icon {
-  font-size: 1.25rem;
-}
 
 /* ── Chat Refactor ── */
 .room-panel--chat {
@@ -1349,3 +1439,277 @@
     transform-origin: top right;
   }
 }
+
+/* ═══════════════════════════════════════
+   DISCORD CHANNEL FEATURE STYLES
+═══════════════════════════════════════ */
+
+/* Channel header indicator in room header */
+.channel-header-indicator {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  padding: 0.15rem 0.6rem;
+  border-radius: 6px;
+  background: rgba(255,255,255,0.06);
+  letter-spacing: 0.05em;
+}
+
+/* Pinned messages toggle button */
+.room-pin-btn {
+  background: rgba(255,255,255,0.06);
+  border: 1px solid var(--border);
+  border-radius: 50px;
+  padding: 0.2rem 0.7rem;
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: var(--text-secondary);
+  cursor: pointer;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  font-family: var(--font-sans);
+  transition: all 0.15s;
+}
+.room-pin-btn:hover { color: var(--primary); border-color: var(--primary); }
+
+/* Pinned messages panel */
+.pinned-messages-panel {
+  background: color-mix(in srgb, var(--bg-card) 90%, #f59e0b);
+  border-bottom: 1px solid rgba(245,158,11,0.25);
+  padding: 0.75rem 1.25rem;
+  flex-shrink: 0;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.pinned-panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: #f59e0b;
+  margin-bottom: 0.5rem;
+}
+.pinned-panel-header button {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+.pinned-msg-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  font-size: 0.75rem;
+}
+.pinned-msg-author {
+  font-weight: 800;
+  color: var(--text-primary);
+  font-size: 0.68rem;
+}
+.pinned-msg-text {
+  flex: 1;
+  color: var(--text-secondary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.pinned-unpin-btn {
+  background: none;
+  border: none;
+  color: var(--text-secondary);
+  font-size: 0.62rem;
+  cursor: pointer;
+  text-decoration: underline;
+  font-family: var(--font-sans);
+}
+
+/* Active channel name in chat header */
+.channel-active-name {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+}
+
+/* Announcement tag */
+.channel-announcement-tag {
+  font-size: 0.52rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(245,158,11,0.15);
+  color: #f59e0b;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Voice tag */
+.channel-voice-tag {
+  font-size: 0.52rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  background: rgba(35,165,89,0.15);
+  color: #23a559;
+  padding: 0.15rem 0.5rem;
+  border-radius: 4px;
+}
+
+/* Read-only notice for announcement channels */
+.channel-readonly-notice {
+  padding: 0.5rem 1rem;
+  background: rgba(245,158,11,0.08);
+  border-top: 1px solid rgba(245,158,11,0.2);
+  font-size: 0.68rem;
+  color: #f59e0b;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+/* Chat message actions row (time + pin button) */
+.chat-msg-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Pin button inside message */
+.chat-pin-btn {
+  background: none;
+  border: none;
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+  cursor: pointer;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  opacity: 0;
+  transition: opacity 0.2s, background 0.2s;
+  font-family: var(--font-sans);
+}
+.chat-msg-row:hover .chat-pin-btn { opacity: 1; }
+.chat-pin-btn:hover { background: rgba(255,255,255,0.08); color: #f59e0b; }
+
+/* Pin indicator inside bubble */
+.chat-pin-indicator { font-size: 0.7rem; opacity: 0.6; }
+
+/* @mention highlight inside bubble */
+.chat-mention {
+  color: var(--primary);
+  font-weight: 800;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-radius: 4px;
+  padding: 0 2px;
+}
+
+/* Highlighted row when you are @mentioned */
+.chat-msg-row--mentioned {
+  background: color-mix(in srgb, var(--primary) 8%, transparent);
+  border-left: 3px solid var(--primary);
+  border-radius: 8px;
+  padding-left: 0.5rem;
+  margin-left: -0.5rem;
+}
+
+/* @mention autocomplete popup above input */
+.mention-popup {
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  box-shadow: 0 -8px 24px rgba(0,0,0,0.3);
+  overflow: hidden;
+  margin-bottom: 0.5rem;
+  max-height: 160px;
+  overflow-y: auto;
+}
+.mention-popup-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  width: 100%;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: var(--font-sans);
+  transition: background 0.15s;
+  text-align: left;
+}
+.mention-popup-item:hover { background: rgba(255,255,255,0.06); }
+.mention-popup-emoji { font-size: 1.1rem; }
+.mention-popup-name {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* Responsive: collapse panels on smaller screens */
+@media (max-width: 1200px) {
+  .room-layout--discord > .channel-list {
+    width: 60px;
+  }
+}
+@media (max-width: 900px) {
+  .room-layout--discord > .room-right-sidebar {
+    display: none;
+  }
+}
+
+/* Discord Chat Aesthetics Override (no bubbles, flush left) */
+.room-layout--discord .chat-msg-row {
+  max-width: 100%;
+  flex-direction: row;
+}
+.room-layout--discord .chat-msg-row--you {
+  align-self: flex-end;
+  flex-direction: row-reverse; 
+}
+.room-layout--discord .chat-msg-bubble {
+  background: transparent;
+  border: none;
+  box-shadow: none;
+  padding: 0;
+  color: var(--text-primary);
+}
+.room-layout--discord .chat-msg-row--you .chat-msg-bubble {
+  background: linear-gradient(135deg, var(--primary) 0%, #7c3aed 100%);
+  color: white;
+  padding: 0.8rem 1.25rem;
+  border-radius: 22px 22px 4px 22px;
+  box-shadow: 0 12px 24px rgba(var(--primary-rgb), 0.25);
+}
+.room-layout--discord .chat-msg-content {
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+.room-layout--discord .chat-msg-row--you .chat-msg-content {
+  align-items: flex-end;
+}
+.room-layout--discord .chat-msg-author {
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-primary);
+  opacity: 1;
+}
+.room-layout--discord .chat-msg-row--you .chat-msg-author {
+  display: none; /* Hide 'You' name when it's right-aligned */
+}
+.room-layout--discord .chat-input-area {
+  background: transparent;
+  border-top: none;
+  padding: 0 1.25rem 1.5rem;
+}
+.room-layout--discord .chat-input-field {
+  background: rgba(255, 255, 255, 0.05);
+  border: none;
+  border-radius: 8px;
+}
+

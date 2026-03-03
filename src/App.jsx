@@ -13,6 +13,7 @@ import CalendarPage from './pages/CalendarPage'
 import StudyRoomsListPage from './pages/StudyRoomsListPage'
 import StudyRoomPage from './pages/StudyRoomPage'
 import PublicProfilePage from './pages/PublicProfilePage'
+import ProfileCustomizerPage from './pages/ProfileCustomizerPage'
 import AdminDashboard from './pages/AdminDashboard'
 import CustomCursor from './components/CustomCursor'
 import ProGate from './components/ProGate'
@@ -118,7 +119,7 @@ function App() {
             </ProtectedRoute>
           )}
 
-          {(['dashboard', 'library', 'analytics', 'goals', 'calendar', 'rooms', 'room', 'exams', 'resume', 'profile', 'admin'].includes(pageToRender)) && (
+          {(['dashboard', 'library', 'analytics', 'goals', 'calendar', 'rooms', 'room', 'exams', 'resume', 'profile', 'customize', 'admin'].includes(pageToRender)) && (
             <ProtectedRoute user={user} profile={profile} profileReady={profileReady} currentPage={pageToRender} onRedirect={navigateTo}>
               {pageToRender === 'admin' ? (
                 <AdminRoute user={user} profile={profile} isAdmin={profile?.isAdmin} profileReady={profileReady} onRedirect={navigateTo}>
@@ -153,6 +154,9 @@ function App() {
                 )}
                 {pageToRender === 'profile' && (
                   <PublicProfilePage onNavigate={navigateTo} />
+                )}
+                {pageToRender === 'customize' && (
+                  <ProfileCustomizerPage onNavigate={navigateTo} />
                 )}
               </Layout>
               )}

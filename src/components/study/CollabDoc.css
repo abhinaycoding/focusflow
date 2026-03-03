@@ -1,0 +1,197 @@
+/* ═══════════════════════════════════════
+   COLLABORATIVE DOC PANEL
+═══════════════════════════════════════ */
+
+.collab-doc-panel {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: var(--bg-color);
+}
+
+/* ── Doc Header ── */
+.collab-doc-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  flex-shrink: 0;
+  background: rgba(0,0,0,0.15);
+}
+
+.collab-doc-title {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.collab-doc-icon {
+  font-size: 1.1rem;
+}
+
+.collab-doc-name {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.collab-doc-meta {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.collab-word-count {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.6;
+}
+
+.collab-save-status {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  border-radius: 6px;
+  padding: 0.2rem 0.6rem;
+  transition: all 0.3s ease;
+}
+
+.collab-save-status.saved {
+  color: #23a559;
+  background: rgba(35,165,89,0.1);
+}
+
+.collab-save-status.saving {
+  color: #f59e0b;
+  background: rgba(245,158,11,0.1);
+}
+
+.collab-save-status.unsaved {
+  color: var(--text-secondary);
+  background: rgba(255,255,255,0.05);
+}
+
+/* ── Editor Wrap ── */
+.collab-doc-editor-wrap {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg-color);
+}
+
+.collab-doc-editor {
+  flex: 1;
+  min-height: 100%;
+}
+
+/* ── Override Quill Snow theme for dark mode ── */
+.collab-doc-editor-wrap .ql-toolbar.ql-snow {
+  background: rgba(255,255,255,0.03);
+  border-color: rgba(255,255,255,0.07) !important;
+  border-left: none;
+  border-right: none;
+  padding: 0.75rem 1.5rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.collab-doc-editor-wrap .ql-toolbar .ql-stroke {
+  stroke: var(--text-secondary) !important;
+}
+
+.collab-doc-editor-wrap .ql-toolbar .ql-fill {
+  fill: var(--text-secondary) !important;
+}
+
+.collab-doc-editor-wrap .ql-toolbar button:hover .ql-stroke,
+.collab-doc-editor-wrap .ql-toolbar button.ql-active .ql-stroke {
+  stroke: var(--primary) !important;
+}
+
+.collab-doc-editor-wrap .ql-toolbar button:hover .ql-fill,
+.collab-doc-editor-wrap .ql-toolbar button.ql-active .ql-fill {
+  fill: var(--primary) !important;
+}
+
+.collab-doc-editor-wrap .ql-toolbar .ql-picker-label {
+  color: var(--text-secondary);
+}
+
+.collab-doc-editor-wrap .ql-container.ql-snow {
+  border: none !important;
+  font-family: var(--font-sans);
+  font-size: 0.95rem;
+  line-height: 1.8;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.collab-doc-editor-wrap .ql-editor {
+  min-height: 400px;
+  padding: 2rem 3rem;
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.collab-doc-editor-wrap .ql-editor::before {
+  color: var(--text-secondary) !important;
+  opacity: 0.4;
+  font-style: italic;
+}
+
+.collab-doc-editor-wrap .ql-editor h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 0.5rem;
+}
+
+.collab-doc-editor-wrap .ql-editor h2 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+.collab-doc-editor-wrap .ql-editor h3 {
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+}
+
+.collab-doc-editor-wrap .ql-editor blockquote {
+  border-left: 3px solid var(--primary);
+  color: var(--text-secondary);
+  padding-left: 1rem;
+}
+
+.collab-doc-editor-wrap .ql-editor code {
+  background: rgba(255,255,255,0.08);
+  border-radius: 4px;
+  padding: 0 4px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85em;
+}
+
+.collab-doc-editor-wrap .ql-editor pre {
+  background: rgba(0,0,0,0.4) !important;
+  border-radius: 8px;
+  padding: 1.25rem;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.85rem;
+  color: #e2e8f0 !important;
+}
+
+.collab-doc-editor-wrap .ql-picker-options {
+  background: var(--bg-card) !important;
+  border-color: rgba(255,255,255,0.1) !important;
+  border-radius: 8px !important;
+}
+
+.collab-doc-editor-wrap .ql-picker-item {
+  color: var(--text-primary) !important;
+}
