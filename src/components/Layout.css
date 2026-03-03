@@ -120,26 +120,74 @@
 .header-user {
   display: flex;
   align-items: center;
+}
+
+.header-user-card {
+  display: flex;
+  align-items: center;
   gap: 0.75rem;
+  padding: 0.35rem 0.75rem 0.35rem 0.9rem;
+  background: color-mix(in srgb, var(--primary) 6%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 18%, transparent);
+  border-radius: 999px;
+  transition: background 0.2s;
+  cursor: default;
+}
+
+.header-user-card:hover {
+  background: color-mix(in srgb, var(--primary) 11%, transparent);
+}
+
+.header-user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+  line-height: 1.25;
+}
+
+.user-greeting {
+  font-size: 0.6rem;
+  font-weight: 500;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.7;
 }
 
 .user-name {
-  font-size: 0.875rem;
-  font-weight: 600;
+  font-size: 0.82rem;
+  font-weight: 700;
   color: var(--text-primary);
+  white-space: nowrap;
 }
 
 .user-avatar-mini {
-  width: 32px;
-  height: 32px;
+  position: relative;
+  width: 34px;
+  height: 34px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: white;
-  font-weight: 700;
-  font-size: 0.875rem;
-  border: 1px solid rgba(255,255,255,0.1);
+  font-weight: 800;
+  font-size: 0.85rem;
+  background: linear-gradient(135deg, var(--primary), color-mix(in srgb, var(--primary) 60%, #000));
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--primary) 40%, transparent);
+  flex-shrink: 0;
+}
+
+.avatar-online-dot {
+  position: absolute;
+  bottom: 1px;
+  right: 1px;
+  width: 8px;
+  height: 8px;
+  background: #22c55e;
+  border-radius: 50%;
+  border: 1.5px solid var(--bg-card);
+  box-shadow: 0 0 4px rgba(34,197,94,0.6);
 }
 
 .page-overflow-container {

@@ -7,6 +7,9 @@ import MaintenanceMode from './MaintenanceMode';
 import SupportWidget from './SupportWidget';
 import './Layout.css';
 
+const toProperCase = (str) =>
+  str ? str.toLowerCase().replace(/\b\w/g, c => c.toUpperCase()) : '';
+
 const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
   const { profile } = useAuth();
   const [globalSettings, setGlobalSettings] = useState(null);
@@ -63,9 +66,15 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
                 )}
              </div>
              <div className="header-user">
-                <span className="user-name">{profile?.full_name || 'Scholar'}</span>
-                <div className="user-avatar-mini" style={{ background: 'var(--primary)' }}>
-                  {profile?.full_name?.[0] || 'S'}
+                <div className="header-user-card">
+                  <div className="header-user-info">
+                    <span className="user-greeting">Welcome back,</span>
+                    <span className="user-name">{toProperCase(profile?.full_name) || 'Scholar'}</span>
+                  </div>
+                  <div className="user-avatar-mini">
+                    {(profile?.full_name?.[0] || 'S').toUpperCase()}
+                    <span className="avatar-online-dot"></span>
+                  </div>
                 </div>
              </div>
           </header>
