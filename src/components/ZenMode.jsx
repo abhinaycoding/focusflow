@@ -22,6 +22,7 @@ const ZenMode = () => {
   const audioRef = useRef(null)
   const [playing, setPlaying] = useState(false)
   const [volume, setVolume] = useState(0.5)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
   
   const currentTrack = getZenTrack(activeTrackId)
 
@@ -149,15 +150,39 @@ const ZenMode = () => {
             {playing ? '⏸' : '▶'}
           </button>
           
-          <select 
-            className="zen-track-select"
-            value={currentTrack.id}
-            onChange={handleTrackChange}
-          >
-            {ZEN_TRACKS.map(t => (
-              <option key={t.id} value={t.id}>{t.name}</option>
-            ))}
-          </select>
+          <div className="zen-custom-select-wrapper">
+            <button 
+              className="zen-track-select-btn"
+              onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+            >
+              <span>{currentTrack?.name || 'Select Track'}</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={`zen-chevron ${isDropdownOpen ? 'open' : ''}`}>
+                <polyline points="6 9 12 15 18 9"></polyline>
+              </svg>
+            </button>
+            
+            {isDropdownOpen && (
+              <>
+                <div className="zen-dropdown-overlay" onClick={() => setIsDropdownOpen(false)} />
+                <div className="zen-custom-dropdown">
+                  {ZEN_TRACKS.map(t => (
+                    <button 
+                      key={t.id} 
+                      className={`zen-dropdown-item ${t.id === activeTrackId ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveTrackId(t.id)
+                        setPlaying(true)
+                        setIsDropdownOpen(false)
+                      }}
+                    >
+                      {t.name}
+                      {t.id === activeTrackId && <span className="zen-check">✓</span>}
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
 
           <div className="zen-volume">
             <span style={{ fontSize: '0.8rem', opacity: 0.7 }}>🔊</span>

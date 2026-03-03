@@ -194,7 +194,12 @@
   transform: scale(1.1);
 }
 
-.zen-track-select {
+/* ── Custom Dropdown Menu ── */
+.zen-custom-select-wrapper {
+  position: relative;
+}
+
+.zen-track-select-btn {
   background: transparent;
   color: var(--text-primary);
   border: none;
@@ -203,7 +208,92 @@
   font-weight: 600;
   cursor: pointer;
   outline: none;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-radius: 12px;
+  transition: background 0.2s ease;
+}
+
+.zen-track-select-btn:hover {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.zen-chevron {
+  width: 14px;
+  height: 14px;
+  transition: transform 0.3s ease;
+}
+
+.zen-chevron.open {
+  transform: rotate(180deg);
+}
+
+.zen-dropdown-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  cursor: default;
+}
+
+.zen-custom-dropdown {
+  position: absolute;
+  bottom: calc(100% + 0.5rem);
+  left: 50%;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--bg-card) 60%, transparent);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid var(--border);
+  border-radius: 16px;
   padding: 0.5rem;
+  z-index: 101;
+  min-width: 200px;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  animation: dropdown-fade-up 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+@keyframes dropdown-fade-up {
+  from { opacity: 0; transform: translate(-50%, 10px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+.zen-dropdown-item {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: transparent;
+  border: none;
+  border-radius: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  transition: all 0.2s ease;
+}
+
+.zen-dropdown-item:hover {
+  background: rgba(255, 255, 255, 0.05);
+  transform: translateX(2px);
+}
+
+.zen-dropdown-item.active {
+  background: color-mix(in srgb, var(--primary) 20%, transparent);
+  color: #fff;
+  font-weight: 700;
+}
+
+.zen-check {
+  color: var(--primary);
+  font-weight: bold;
 }
 
 .zen-volume {
