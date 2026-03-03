@@ -3,8 +3,9 @@ import Navigation from '../components/Navigation'
 import { ARCHETYPES } from '../constants/archetypes'
 import { useTranslation } from '../contexts/LanguageContext'
 import { useAuth } from '../contexts/AuthContext'
-import { db } from '../lib/firebase'
+import { db, storage } from '../lib/firebase'
 import { doc, setDoc } from 'firebase/firestore'
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage'
 import './ProfileSetup.css'
 
 const ProfileSetup = ({ onNavigate }) => {
@@ -17,8 +18,32 @@ const ProfileSetup = ({ onNavigate }) => {
   const [isCustomExam, setIsCustomExam] = useState(false)
   const [goals, setGoals] = useState(profile?.goals || '')
   const [avatarId, setAvatarId] = useState(profile?.avatar_id || 'owl')
+  const [photoUrl, setPhotoUrl] = useState(profile?.photo_url || '')
+  const [uploadingAvatar, setUploadingAvatar] = useState(false)
   const [loading, setLoading] = useState(false)
   const [errorMsg, setErrorMsg] = useState('')
+
+  const handleFileChange = async (e) => {
+    const file = e.target.files[0]
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 2MB.')
+      return
+    }
+    setUploadingAvatar(true)
+    setErrorMsg('')
+    try {
+      const storageRef = ref(storage, `avatars/${user.uid}`)
+      await uploadBytes(storageRef, file)
+      const url = await getDownloadURL(storageRef)
+      setPhotoUrl(url)
+    } catch (err) {
+      setErrorMsg('Failed to upload image.')
+      console.error(err)
+    } finally {
+      setUploadingAvatar(false)
+    }
+  }
 
   const EXAM_OPTIONS = ['JEE Main', 'JEE Advanced', 'NEET', 'UPSC', 'GATE', 'CAT']
 
@@ -37,6 +62,7 @@ const ProfileSetup = ({ onNavigate }) => {
         exam_date: examDate,
         goals: goals,
         avatar_id: avatarId,
+        photo_url: photoUrl,
         updated_at: new Date().toISOString()
       }
 
@@ -166,7 +192,32 @@ const ProfileSetup = ({ onNavigate }) => {
             </div>
 
             <div className="form-group">
-              <label className="form-label">{t('profile.choosePersona')}</label>
+              <label className="form-label">Custom Profile Picture</label>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div style={{
+                  width: '60px', height: '60px', borderRadius: '50%', background: 'rgba(255,255,255,0.1)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden'
+                }}>
+                  {photoUrl ? (
+                    <img src={photoUrl} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (
+                    <span style={{ fontSize: '1.5rem' }}>{ARCHETYPES.find(a => a.id === avatarId)?.emoji || '👤'}</span>
+                  )}
+                </div>
+                <label className="exam-chip" style={{ cursor: 'pointer', margin: 0 }}>
+                  {uploadingAvatar ? 'Uploading...' : 'Upload Image'}
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFileChange} disabled={uploadingAvatar} />
+                </label>
+                {photoUrl && (
+                  <button type="button" onClick={() => setPhotoUrl('')} className="exam-chip" style={{ background: 'transparent', border: '1px solid rgba(255,255,255,0.2)' }}>
+                    Remove
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="form-group">
+              <label className="form-label">{t('profile.choosePersona')} (Fallback)</label>
               <div className="persona-grid">
                 {ARCHETYPES.map((arch) => {
                   const isSelected = avatarId === arch.id;

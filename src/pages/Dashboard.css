@@ -75,7 +75,8 @@
 .dashboard-widget {
   background: var(--bg-card);
   border: 1px solid var(--border);
-  padding: 1rem 0; /* Align with editorial style */
+  padding: 1.5rem; /* Added generous padding to prevent text from touching corners */
+  border-radius: 24px;
   transition: all 0.4s cubic-bezier(0.19, 1, 0.22, 1);
   position: relative;
 }

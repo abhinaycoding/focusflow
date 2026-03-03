@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../../lib/firebase'
 import {
   collection, doc, addDoc, setDoc, onSnapshot,
-  deleteDoc, serverTimestamp, query, where, getDocs
+  deleteDoc, serverTimestamp, query, where, getDocs, orderBy
 } from 'firebase/firestore'
 import { useToast } from '../../contexts/ToastContext'
 import { getArchetype } from '../../constants/archetypes'
@@ -21,45 +21,81 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
 
   const localStreamRef = useRef(null)
   const peersRef = useRef({})                         // uid -> RTCPeerConnection
+  const audioRefs = useRef({})                        // uid -> HTMLAudioElement
   const audioContextRef = useRef(null)
   const analyserRef = useRef(null)
   const animFrameRef = useRef(null)
   const presenceUnsub = useRef(null)
-  const signalingUnsubs = useRef([])
+  const signalsUnsub = useRef(null)
 
   const voicePresencePath = `room_voice_presence`
   const presenceDocId = `${roomId}_${channelId}_${user.uid}`
+  const signalsPath = `room_voice_signals`
+
+  // ── WebRTC Setup for a Peer ────────────────────────────────────────────────
+  const createPeer = useCallback((remoteUid) => {
+    if (peersRef.current[remoteUid]) return peersRef.current[remoteUid]
+
+    const pc = new RTCPeerConnection(ICE_SERVERS)
+    peersRef.current[remoteUid] = pc
+
+    // Add local tracks
+    if (localStreamRef.current) {
+      localStreamRef.current.getTracks().forEach(t => pc.addTrack(t, localStreamRef.current))
+    }
+
+    // Send ICE candidates to signaling server
+    pc.onicecandidate = (event) => {
+      if (event.candidate) {
+        addDoc(collection(db, signalsPath), {
+          room_id: roomId,
+          channel_id: channelId,
+          sender: user.uid,
+          receiver: remoteUid,
+          type: 'candidate',
+          data: JSON.stringify(event.candidate),
+          created_at: serverTimestamp()
+        }).catch(() => {})
+      }
+    }
+
+    // Receive remote tracks
+    pc.ontrack = (event) => {
+      const stream = event.streams[0]
+      if (!audioRefs.current[remoteUid]) {
+        audioRefs.current[remoteUid] = new Audio()
+      }
+      audioRefs.current[remoteUid].srcObject = stream
+      audioRefs.current[remoteUid].autoplay = true
+    }
+
+    return pc
+  }, [roomId, channelId, user.uid])
 
   // ── Join Voice ─────────────────────────────────────────────────────────────
   const joinVoice = useCallback(async () => {
-    // Step 1: Get mic — this is the only thing that can truly block
     let stream
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false })
     } catch (err) {
-      if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-        toast('Microphone permission denied.', 'error')
-      } else {
-        toast('Microphone not available.', 'error')
-      }
+      toast('Microphone permission denied or not available.', 'error')
       return
     }
 
     localStreamRef.current = stream
 
-    // Step 2: Publish presence to Firestore (non-blocking — if rules not deployed, still works)
+    // Write presence
     setDoc(doc(db, voicePresencePath, presenceDocId), {
       room_id: roomId,
       channel_id: channelId,
       user_id: user.uid,
       display_name: user.displayName || 'Scholar',
       avatar_id: user.avatarId || 'owl',
+      photo_url: user.photoUrl || null,
       joined_at: serverTimestamp(),
-    }).catch(() => {
-      // Firestore write failed (e.g. rules not deployed) — voice still works locally
-    })
+    }).catch(() => {})
 
-    // Step 3: Mic visualizer
+    // Mic visualizer
     try {
       audioContextRef.current = new AudioContext()
       const source = audioContextRef.current.createMediaStreamSource(stream)
@@ -67,42 +103,106 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
       analyserRef.current.fftSize = 256
       source.connect(analyserRef.current)
       detectSpeaking()
-    } catch (_) { /* analyser optional */ }
+    } catch (_) { }
 
     setJoined(true)
-    // Immediately show self in voice list using local fallback
-    setVoiceUsers(prev => {
-      const alreadyIn = prev.some(u => u.user_id === user.uid)
-      if (alreadyIn) return prev
-      return [...prev, {
-        id: presenceDocId,
-        user_id: user.uid,
-        display_name: user.displayName || 'Scholar',
-        avatar_id: user.avatarId || 'owl',
-      }]
-    })
     toast('Joined voice channel 🎙️', 'success')
-  }, [roomId, channelId, user, toast, presenceDocId])
+
+    // Find who is already in the room and initiate calls (offers)
+    getDocs(query(
+      collection(db, voicePresencePath),
+      where('room_id', '==', roomId),
+      where('channel_id', '==', channelId)
+    )).then(snap => {
+      snap.docs.forEach(async (d) => {
+        const remoteUid = d.data().user_id
+        if (remoteUid !== user.uid) {
+          const pc = createPeer(remoteUid)
+          const offer = await pc.createOffer()
+          await pc.setLocalDescription(offer)
+          
+          addDoc(collection(db, signalsPath), {
+            room_id: roomId,
+            channel_id: channelId,
+            sender: user.uid,
+            receiver: remoteUid,
+            type: 'offer',
+            data: JSON.stringify(offer),
+            created_at: serverTimestamp()
+          }).catch(() => {})
+        }
+      })
+    })
+
+    // Listen for incoming signals (offers, answers, candidates)
+    const signalsQuery = query(
+      collection(db, signalsPath),
+      where('room_id', '==', roomId),
+      where('channel_id', '==', channelId),
+      where('receiver', '==', user.uid)
+    )
+
+    signalsUnsub.current = onSnapshot(signalsQuery, snap => {
+      snap.docChanges().forEach(async (change) => {
+        if (change.type === 'added') {
+          const signal = change.doc.data()
+          const sender = signal.sender
+          const payload = JSON.parse(signal.data)
+
+          // Delete signal after processing so it doesn't pile up
+          deleteDoc(change.doc.ref).catch(() => {})
+
+          if (signal.type === 'offer') {
+            const pc = createPeer(sender)
+            await pc.setRemoteDescription(new RTCSessionDescription(payload))
+            const answer = await pc.createAnswer()
+            await pc.setLocalDescription(answer)
+            addDoc(collection(db, signalsPath), {
+              room_id: roomId,
+              channel_id: channelId,
+              sender: user.uid,
+              receiver: sender,
+              type: 'answer',
+              data: JSON.stringify(answer),
+              created_at: serverTimestamp()
+            }).catch(() => {})
+          } else if (signal.type === 'answer') {
+            const pc = peersRef.current[sender]
+            if (pc) await pc.setRemoteDescription(new RTCSessionDescription(payload))
+          } else if (signal.type === 'candidate') {
+            const pc = peersRef.current[sender]
+            if (pc) await pc.addIceCandidate(new RTCIceCandidate(payload)).catch(()=> {})
+          }
+        }
+      })
+    })
+  }, [roomId, channelId, user, toast, presenceDocId, createPeer])
 
   // ── Leave Voice ────────────────────────────────────────────────────────────
   const leaveVoice = useCallback(async () => {
     cancelAnimationFrame(animFrameRef.current)
     localStreamRef.current?.getTracks().forEach(t => t.stop())
     audioContextRef.current?.close()
+    
     Object.values(peersRef.current).forEach(pc => pc.close())
     peersRef.current = {}
+    
+    Object.values(audioRefs.current).forEach(audio => {
+      audio.pause()
+      audio.srcObject = null
+    })
+    audioRefs.current = {}
 
     await deleteDoc(doc(db, voicePresencePath, presenceDocId)).catch(() => {})
 
     presenceUnsub.current?.()
-    signalingUnsubs.current.forEach(u => u())
-    signalingUnsubs.current = []
+    signalsUnsub.current?.()
 
     localStreamRef.current = null
     setJoined(false)
     setSpeaking({})
     toast('Left voice channel', 'info')
-  }, [presenceDocId])
+  }, [presenceDocId, toast])
 
   // ── Speaking Detector ─────────────────────────────────────────────────────
   const detectSpeaking = () => {
@@ -125,19 +225,38 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
         where('room_id', '==', roomId),
         where('channel_id', '==', channelId)
       )
-      unsub = onSnapshot(q,
-        snap => {
-          setVoiceUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-        },
-        _err => {
-          // Firestore rules not deployed yet — presence won't sync cross-device
-          // but local voice still works via local state (joinVoice adds self)
+      unsub = onSnapshot(q, snap => {
+        const users = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+        // Pre-fill local user if we are joined but firestore hasn't synced
+        if (joined && !users.some(u => u.user_id === user.uid)) {
+          users.push({
+            id: presenceDocId,
+            user_id: user.uid,
+            display_name: user.displayName || 'Scholar',
+            avatar_id: user.avatarId || 'owl',
+            photo_url: user.photoUrl || null,
+          })
         }
-      )
+        setVoiceUsers(users)
+        
+        // Clean up peers who left
+        const currentUids = users.map(u => u.user_id)
+        Object.keys(peersRef.current).forEach(uid => {
+          if (!currentUids.includes(uid)) {
+            peersRef.current[uid].close()
+            delete peersRef.current[uid]
+            if (audioRefs.current[uid]) {
+              audioRefs.current[uid].pause()
+              audioRefs.current[uid].srcObject = null
+              delete audioRefs.current[uid]
+            }
+          }
+        })
+      })
       presenceUnsub.current = unsub
-    } catch (_) { /* noop */ }
+    } catch (_) { }
     return () => unsub?.()
-  }, [roomId, channelId])
+  }, [roomId, channelId, joined, user, presenceDocId])
 
   // ── Cleanup on unmount ────────────────────────────────────────────────────
   useEffect(() => {
@@ -146,7 +265,7 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
     }
   }, [joined, leaveVoice])
 
-  // ── Toggle Mute ───────────────────────────────────────────────────────────
+  // ── Toggle Mute / Deafen ──────────────────────────────────────────────────
   const toggleMute = () => {
     if (!localStreamRef.current) return
     localStreamRef.current.getAudioTracks().forEach(t => { t.enabled = muted })
@@ -154,13 +273,14 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
   }
 
   const toggleDeafen = () => {
+    Object.values(audioRefs.current).forEach(audio => {
+      audio.muted = !deafened
+    })
     setDeafened(!deafened)
-    // In a full WebRTC implementation this would silence all remote audio
   }
 
   return (
     <div className="voice-channel-panel">
-      {/* Users in voice */}
       <div className="voice-users-list">
         {voiceUsers.length === 0 ? (
           <div className="voice-empty">
@@ -176,7 +296,11 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
             return (
               <div key={vu.user_id} className={`voice-user-pill ${isTalking ? 'speaking' : ''}`}>
                 <div className={`voice-avatar ${isTalking ? 'speaking' : ''}`}>
-                  <span>{arche.emoji}</span>
+                  {vu.photo_url ? (
+                    <img src={vu.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  ) : (
+                    <span>{arche.emoji}</span>
+                  )}
                   {isTalking && <div className="speaking-ring" />}
                 </div>
                 <div className="voice-user-info">
@@ -190,7 +314,6 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
         )}
       </div>
 
-      {/* Controls */}
       <div className="voice-controls">
         {!joined ? (
           <button className="voice-join-btn" onClick={joinVoice}>

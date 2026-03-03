@@ -131,6 +131,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
         await updateDoc(doc(db, 'room_members', `${roomId}_${user.uid}`), {
           display_name: displayName,
           avatar_id: profile?.avatar_id || 'owl',
+          photo_url: profile?.photo_url || null,
           timer_status: isRunning ? 'focusing' : isComplete ? 'done' : 'idle',
           seconds_left: secondsLeft,
           is_zen: isZenModeActive,
@@ -144,6 +145,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
           user_id: user.uid,
           display_name: displayName,
           avatar_id: profile?.avatar_id || 'owl',
+          photo_url: profile?.photo_url || null,
           timer_status: isRunning ? 'focusing' : isComplete ? 'done' : 'idle',
           seconds_left: secondsLeft,
           is_zen: isZenModeActive,
@@ -341,6 +343,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
         user_id: user.uid,
         display_name: displayName,
         avatar_id: profile?.avatar_id || 'owl',
+        photo_url: profile?.photo_url || null,
         text,
         mentions,
         pinned: false,
@@ -528,7 +531,11 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                     return (
                       <div key={m.user_id} className={`member-card ${isMe ? 'member-card--you' : ''} ${m.is_zen ? 'member-card--zen' : ''} ${isNudged ? 'member-card--nudged' : ''} member-card--${m.timer_status || 'idle'}`}>
                         <div className="member-avatar-container">
-                          <span className="member-emoji">{arche.emoji}</span>
+                          {m.photo_url ? (
+                            <img src={m.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                          ) : (
+                            <span className="member-emoji">{arche.emoji}</span>
+                          )}
                         </div>
                         <div className="member-info">
                           <div className="member-name-row">
@@ -631,7 +638,7 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                   roomId={roomId}
                   channelId={activeChannel.id}
                   channelName={activeChannel.name}
-                  user={{ uid: user?.uid || guestId, displayName, avatarId: profile?.avatar_id || 'owl' }}
+                  user={{ uid: user?.uid || guestId, displayName, avatarId: profile?.avatar_id || 'owl', photoUrl: profile?.photo_url || null }}
                   members={members}
                 />
               </div>
@@ -700,7 +707,13 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                     >
                       <div className="chat-msg-avatar-wrap">
                         {showName && (
-                          <div className="chat-msg-avatar">{arche.emoji}</div>
+                          <div className="chat-msg-avatar" style={{ overflow: 'hidden' }}>
+                            {msg.photo_url ? (
+                              <img src={msg.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            ) : (
+                              arche.emoji
+                            )}
+                          </div>
                         )}
                       </div>
                       <div className="chat-msg-content">
@@ -750,7 +763,11 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
                         className="mention-popup-item"
                         onMouseDown={() => insertMention(m.display_name)}
                       >
-                        <span className="mention-popup-emoji">{getArchetype(m.avatar_id).emoji}</span>
+                        {m.photo_url ? (
+                          <img src={m.photo_url} alt="" style={{ width: '20px', height: '20px', borderRadius: '50%', objectFit: 'cover', marginRight: '8px' }} />
+                        ) : (
+                          <span className="mention-popup-emoji">{getArchetype(m.avatar_id).emoji}</span>
+                        )}
                         <span className="mention-popup-name">{m.display_name}</span>
                       </button>
                     ))}
