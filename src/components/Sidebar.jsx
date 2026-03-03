@@ -7,8 +7,6 @@ import './Sidebar.css'
 const Sidebar = ({ activeTab, onNavigate }) => {
   const { isPro } = usePlan()
   const { signOut, isAdmin } = useAuth()
-  const { language, setLanguage, languages } = useTranslation()
-  const [langPanelOpen, setLangPanelOpen] = useState(false)
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
 
   const tabs = [
@@ -93,11 +91,11 @@ const Sidebar = ({ activeTab, onNavigate }) => {
               <span className="nav-label">Command Center</span>
             </button>
           )}
-          {/* Settings / Controls */}
+          {/* Settings button */}
           <div className="sidebar-settings">
             <button 
-              className={`nav-item ${langPanelOpen ? 'active' : ''}`}
-              onClick={() => setLangPanelOpen(p => !p)}
+              className={`nav-item ${activeTab === 'settings' ? 'active' : ''}`}
+              onClick={() => onNavigate('settings')}
             >
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="nav-icon">
                 <circle cx="12" cy="12" r="3"></circle>
@@ -105,19 +103,6 @@ const Sidebar = ({ activeTab, onNavigate }) => {
               </svg>
               <span className="nav-label">Settings</span>
             </button>
-
-            {langPanelOpen && (
-              <div className="sidebar-sub-panel">
-                <div style={{ padding: '0.25rem 0.5rem 0.5rem', fontSize: '0.6rem', fontWeight: 800, textTransform: 'uppercase', letterSpacing: '0.1em', opacity: 0.5 }}>Language</div>
-                <div className="flex flex-col gap-1">
-                  {languages.map(l => (
-                    <button key={l.code} className={`sub-panel-item ${language === l.code ? 'active' : ''}`} onClick={() => setLanguage(l.code)}>
-                      {l.flag} {l.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Profile & Customize links */}
