@@ -267,8 +267,13 @@
 }
 
 .dm-msg-them .dm-msg-bubble {
-  background: color-mix(in srgb, var(--border) 80%, transparent);
+  /* Use a solid semi-transparent overlay on --bg-card so the text is
+     always readable no matter which theme is active.
+     Falls back gracefully on older browsers via the rgba rule. */
+  background: rgba(var(--bg-card-rgb, 255,255,255), 0.12);
+  background: color-mix(in srgb, var(--text-primary) 10%, var(--bg-card));
   color: var(--text-primary);
+  border: 1px solid var(--border);
   border-bottom-left-radius: 4px;
 }
 
