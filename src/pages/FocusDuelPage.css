@@ -245,7 +245,7 @@
 .duel-incoming-sub  { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
 
 .duel-accept-btn {
-  background: linear-gradient(135deg, #f97316, #a855f7);
+  background: var(--primary);
   color: #fff;
   border: none;
   border-radius: 10px;
@@ -256,7 +256,7 @@
   transition: opacity 0.2s, transform 0.15s;
   white-space: nowrap;
 }
-.duel-accept-btn:hover { opacity: 0.9; transform: scale(1.04); }
+.duel-accept-btn:hover { opacity: 0.88; transform: scale(1.04); }
 
 /* ═══════════════════════════════════════
    CHALLENGE SCREEN
@@ -388,13 +388,13 @@
   transition: all 0.15s;
 }
 
-.duel-option-btn:hover { border-color: #f97316; color: var(--text-primary); }
+.duel-option-btn:hover { border-color: var(--primary); color: var(--primary); }
 
 .duel-option-active {
-  background: linear-gradient(135deg, #f97316, #a855f7) !important;
+  background: var(--primary) !important;
   color: #fff !important;
-  border-color: transparent !important;
-  box-shadow: 0 4px 12px rgba(249,115,22,0.35);
+  border-color: var(--primary) !important;
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--primary) 40%, transparent);
 }
 
 .duel-option-locked {
@@ -436,7 +436,7 @@
   color: var(--text-secondary);
   text-align: center;
 }
-.duel-winner-bar strong { color: #f97316; }
+.duel-winner-bar strong { color: var(--primary); }
 
 .duel-send-btn {
   width: 100%;
@@ -446,14 +446,13 @@
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
-  background: linear-gradient(135deg, #f97316, #ec4899, #a855f7);
-  background-size: 200% auto;
+  background: var(--primary);
   color: #fff;
-  transition: all 0.3s;
+  transition: all 0.2s;
   letter-spacing: 0.02em;
-  box-shadow: 0 6px 24px rgba(249,115,22,0.35);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent);
 }
-.duel-send-btn:hover { background-position: right center; transform: translateY(-2px); box-shadow: 0 10px 32px rgba(249,115,22,0.5); }
+.duel-send-btn:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 45%, transparent); }
 .duel-send-btn:active { transform: translateY(0); }
 .duel-sending { opacity: 0.6; cursor: not-allowed; }
 
