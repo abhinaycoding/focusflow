@@ -148,16 +148,17 @@ service cloud.firestore {
     }
 
     // Direct Messages — participants can always read their own conversations.
-    // The `list` rule allows querying the dms collection with
+    // The `list` rule uses the same convoId pattern check so that a query with
     //   where('participants', 'array-contains', uid)
-    // so that ALL conversations (received or sent) appear in the inbox
-    // without needing both sides to be friends first (Instagram-style).
+    // is allowed — because every returned document's convoId contains the user's UID.
+    // We avoid resource.data.participants in the list rule because old dms documents
+    // may not have a participants field, which causes a permission-denied error.
     match /dms/{convoId} {
-      // Allow fetching a specific document if the user is one of the two participants
+      // Fetch a specific document — user must be one of the two participants
       allow get: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
-      // Allow collection-level listing only when querying by participants
-      allow list: if request.auth != null && request.auth.uid in resource.data.participants;
-      // Allow writes (create/update convo doc + typing indicator) if user is a participant
+      // Collection-level listing (e.g. where participants array-contains uid)
+      allow list: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
+      // Writes: create / update convo doc (participants, last_activity, typing flags)
       allow write: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
       match /messages/{msgId} {
         allow read: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
