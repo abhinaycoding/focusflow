@@ -1,0 +1,238 @@
+/* ════════════════════════════════════════════════════════════
+   DUEL INVITE POPUP — Global Challenge Notification
+   Slides in from the bottom-right, cinematic arena aesthetic
+════════════════════════════════════════════════════════════ */
+
+.dip-stack {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9998;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 1rem;
+  pointer-events: none;
+}
+
+/* ── Card ── */
+.dip-card {
+  position: relative;
+  width: 340px;
+  background: #0d0a1e;
+  border-radius: 20px;
+  overflow: hidden;
+  pointer-events: all;
+  box-shadow:
+    0 24px 80px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(255,255,255,0.06);
+  animation: dip-slide-in 0.45s cubic-bezier(0.19,1,0.22,1) calc(var(--idx, 0) * 0.1s) both;
+  transform-origin: bottom right;
+}
+
+@keyframes dip-slide-in {
+  from { opacity: 0; transform: translateY(32px) scale(0.92); filter: blur(4px); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
+}
+
+/* Animated rainbow glow border */
+.dip-glow-border {
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  padding: 1.5px;
+  background: linear-gradient(135deg, var(--primary), #a855f7, var(--primary));
+  background-size: 200% 200%;
+  animation: dip-border-shift 2.5s linear infinite;
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+@keyframes dip-border-shift {
+  0%   { background-position: 0%   50%; }
+  50%  { background-position: 100% 50%; }
+  100% { background-position: 0%   50%; }
+}
+
+/* ── Header row ── */
+.dip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.85rem 1rem 0.6rem;
+}
+
+.dip-badge {
+  font-size: 0.62rem;
+  font-weight: 900;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--primary) 30%, transparent);
+  padding: 3px 10px;
+  border-radius: 999px;
+}
+
+.dip-x {
+  background: none;
+  border: none;
+  color: rgba(255,255,255,0.3);
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 2px 6px;
+  border-radius: 6px;
+  transition: color 0.15s, background 0.15s;
+  line-height: 1;
+}
+.dip-x:hover { color: #fff; background: rgba(255,255,255,0.08); }
+
+/* ── Body ── */
+.dip-body {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.25rem 1rem 1rem;
+}
+
+.dip-avatar {
+  position: relative;
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--primary), #4a0e0e);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.dip-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.dip-avatar-ring {
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px solid var(--primary);
+  animation: dip-ring-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes dip-ring-pulse {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50%       { transform: scale(1.12); opacity: 0.3; }
+}
+
+.dip-info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.dip-challenger-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dip-details {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+}
+
+.dip-pill {
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: rgba(255,255,255,0.6);
+  padding: 2px 8px;
+  border-radius: 999px;
+}
+
+.dip-xp-pill {
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 30%, transparent);
+  color: var(--primary);
+}
+
+.dip-stakes-text {
+  font-size: 0.7rem;
+  color: rgba(255,255,255,0.35);
+}
+.dip-stakes-text strong { color: rgba(255,255,255,0.6); }
+
+/* ── Actions ── */
+.dip-actions {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0 1rem 1rem;
+}
+
+.dip-btn {
+  flex: 1;
+  padding: 0.6rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+  border: none;
+  transition: all 0.18s;
+  letter-spacing: 0.02em;
+}
+
+.dip-decline {
+  background: rgba(255,255,255,0.06);
+  color: rgba(255,255,255,0.45);
+  border: 1px solid rgba(255,255,255,0.1);
+}
+.dip-decline:hover { background: rgba(239,68,68,0.1); color: #ef4444; border-color: rgba(239,68,68,0.3); }
+
+.dip-accept {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--primary) 50%, transparent);
+  position: relative;
+  overflow: hidden;
+}
+.dip-accept::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+}
+.dip-accept:hover { transform: translateY(-1px); box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 60%, transparent); }
+.dip-accept:active { transform: scale(0.97); }
+
+/* ── Timer bar (auto-dismiss feel) ── */
+.dip-timer-bar {
+  height: 2px;
+  background: linear-gradient(90deg, var(--primary), transparent);
+  width: 100%;
+  animation: dip-timer 30s linear forwards;
+  transform-origin: left;
+}
+@keyframes dip-timer {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* ── Mobile ── */
+@media (max-width: 480px) {
+  .dip-stack { left: 1rem; right: 1rem; }
+  .dip-card  { width: 100%; }
+}

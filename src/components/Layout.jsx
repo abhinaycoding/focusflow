@@ -8,6 +8,7 @@ import MaintenanceMode from './MaintenanceMode';
 import SupportWidget from './SupportWidget';
 import DirectMessages from './DirectMessages';
 import PeopleSearch from './PeopleSearch';
+import DuelInvitePopup from './DuelInvitePopup';
 import './Layout.css';
 
 const toProperCase = (str) =>
@@ -365,6 +366,7 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
           onNavigate('duel');
         }}
       />
+      <DuelInvitePopup onNavigate={onNavigate} />
     </div>
   );
 };
