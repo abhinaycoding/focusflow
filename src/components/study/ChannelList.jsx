@@ -151,7 +151,7 @@ const ChannelList = ({ roomId, activeChannelId, onSelectChannel, channels, isOwn
       </div>
 
       {!collapsed && (
-        <>
+        <div className="channel-list-scroller">
           {renderSection('TEXT CHANNELS', groups.text, 'text')}
           {renderSection('VOICE CHANNELS', groups.voice, 'voice')}
           {renderSection('DOC CHANNELS', groups.doc, 'doc')}
@@ -186,7 +186,7 @@ const ChannelList = ({ roomId, activeChannelId, onSelectChannel, channels, isOwn
               </div>
             </div>
           )}
-        </>
+        </div>
       )}
     </div>
   )
