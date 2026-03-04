@@ -440,21 +440,88 @@
 
 .duel-send-btn {
   width: 100%;
-  padding: 1rem;
+  height: 56px;
   border: none;
   border-radius: 14px;
   font-size: 1rem;
   font-weight: 800;
   cursor: pointer;
-  background: var(--primary);
+  background: #0a0a0a;
   color: #fff;
-  transition: all 0.2s;
-  letter-spacing: 0.02em;
-  box-shadow: 0 6px 20px color-mix(in srgb, var(--primary) 35%, transparent);
+  position: relative;
+  z-index: 1;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  letter-spacing: 0.04em;
+  transition: color 0.2s;
+  box-shadow: 0 6px 24px rgba(0,0,0,0.4);
 }
-.duel-send-btn:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 10px 28px color-mix(in srgb, var(--primary) 45%, transparent); }
-.duel-send-btn:active { transform: translateY(0); }
-.duel-sending { opacity: 0.6; cursor: not-allowed; }
+
+.duel-send-btn::after,
+.duel-send-btn::before {
+  position: absolute;
+  content: "";
+  width: 100%;
+  z-index: -1;
+  transition: 0.25s ease;
+  background: var(--primary);
+}
+
+.duel-send-btn::after {
+  height: 10%;
+  bottom: 0;
+  clip-path: polygon(
+    0% 74%, 4% 75%, 8% 76%, 11% 77%, 15% 78%,
+    20% 78%, 25% 77%, 32% 77%, 37% 75%, 40% 74%,
+    43% 74%, 46% 73%, 52% 72%, 57% 72%, 65% 74%,
+    66% 75%, 71% 78%, 75% 82%, 81% 86%, 83% 88%,
+    88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%,
+    82% 100%, 0 100%
+  );
+}
+
+.duel-send-btn::before {
+  height: 10%;
+  top: 0;
+  transform: rotate(180deg);
+  clip-path: polygon(
+    0% 74%, 4% 75%, 8% 76%, 11% 77%, 15% 78%,
+    20% 78%, 25% 77%, 32% 77%, 37% 75%, 40% 74%,
+    43% 74%, 46% 73%, 52% 72%, 57% 72%, 65% 74%,
+    66% 75%, 71% 78%, 75% 82%, 81% 86%, 83% 88%,
+    88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%,
+    82% 100%, 0 100%
+  );
+}
+
+.duel-send-btn:hover::after {
+  clip-path: polygon(
+    0 30%, 9% 34%, 7% 39%, 11% 43%, 13% 33%,
+    17% 30%, 24% 34%, 25% 35%, 30% 31%, 30% 38%,
+    39% 33%, 35% 43%, 43% 45%, 55% 46%, 65% 74%,
+    67% 66%, 81% 57%, 75% 82%, 81% 86%, 83% 88%,
+    88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%,
+    82% 100%, 0 100%
+  );
+  height: 100%;
+}
+
+.duel-send-btn:hover::before {
+  clip-path: polygon(
+    0 30%, 9% 34%, 7% 39%, 11% 43%, 13% 33%,
+    17% 30%, 24% 34%, 25% 35%, 30% 31%, 30% 38%,
+    39% 33%, 35% 43%, 43% 45%, 55% 46%, 65% 74%,
+    67% 66%, 81% 57%, 75% 82%, 81% 86%, 83% 88%,
+    88% 91%, 90% 94%, 94% 96%, 98% 98%, 100% 100%,
+    82% 100%, 0 100%
+  );
+  height: 100%;
+}
+
+.duel-send-btn:active { transform: scale(0.98); }
+.duel-sending { opacity: 0.5; cursor: not-allowed; pointer-events: none; }
 
 .duel-pro-nudge {
   background: rgba(245,158,11,0.08);
