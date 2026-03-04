@@ -353,8 +353,8 @@
 }
 
 @keyframes dropIn {
-  from { opacity: 0; transform: translateY(-6px) scale(0.97); }
-  to   { opacity: 1; transform: translateY(0) scale(1); }
+  from { opacity: 0; transform: translateY(-10px) scale(0.95); filter: blur(3px); }
+  to   { opacity: 1; transform: translateY(0)    scale(1);    filter: blur(0); }
 }
 
 .dropdown-header {
@@ -532,8 +532,8 @@
 }
 
 @keyframes cmdSlide {
-  from { opacity: 0; transform: scale(0.96) translateY(-12px); }
-  to   { opacity: 1; transform: scale(1) translateY(0); }
+  from { opacity: 0; transform: scale(0.94) translateY(-16px); filter: blur(6px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);     filter: blur(0); }
 }
 
 .cmd-input-wrap {
