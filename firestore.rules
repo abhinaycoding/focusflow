@@ -26,9 +26,12 @@ service cloud.firestore {
 
     // 1b. Friend Requests
     match /friend_requests/{reqId} {
+      // Allow getting a specific request, OR listing requests where the user is involved
       allow read: if request.auth != null && (
         resource.data.from_uid == request.auth.uid ||
-        resource.data.to_uid   == request.auth.uid
+        resource.data.to_uid   == request.auth.uid ||
+        resource.data.from     == request.auth.uid ||
+        resource.data.to       == request.auth.uid
       );
       allow create: if request.auth != null && request.resource.data.from_uid == request.auth.uid;
       allow update: if request.auth != null && resource.data.to_uid == request.auth.uid;
