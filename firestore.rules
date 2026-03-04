@@ -147,19 +147,12 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && isMember(resource.data.room_id);
     }
 
-    // Direct Messages — participants can always read their own conversations.
-    // The `list` rule uses the same convoId pattern check so that a query with
-    //   where('participants', 'array-contains', uid)
-    // is allowed — because every returned document's convoId contains the user's UID.
-    // We avoid resource.data.participants in the list rule because old dms documents
-    // may not have a participants field, which causes a permission-denied error.
+    // Direct Messages — only the two participants may access a conversation.
+    // The convoId is always `[uid1, uid2].sort().join('_')` so it always
+    // contains both UIDs. The sidebar loads from /profiles/{uid}/unread_dms
+    // (user-scoped, always works) — no direct /dms collection queries needed.
     match /dms/{convoId} {
-      // Fetch a specific document — user must be one of the two participants
-      allow get: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
-      // Collection-level listing (e.g. where participants array-contains uid)
-      allow list: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
-      // Writes: create / update convo doc (participants, last_activity, typing flags)
-      allow write: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
+      allow read, write: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
       match /messages/{msgId} {
         allow read: if request.auth != null && convoId.matches('.*' + request.auth.uid + '.*');
         allow create: if request.auth != null
