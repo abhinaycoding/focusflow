@@ -6,6 +6,7 @@ import {
 } from 'firebase/firestore';
 import { useToast } from '../contexts/ToastContext';
 import { useAuth } from '../contexts/AuthContext';
+import { seedScholars } from '../utils/SeedMockUsers';
 import './AdminDashboard.css';
 
 const AdminDashboard = ({ onNavigate }) => {
@@ -252,6 +253,12 @@ const AdminDashboard = ({ onNavigate }) => {
       }, { merge: true });
       toast(isMaintenance ? 'Platform online.' : '🚨 MAINTENANCE MODE ENGAGED.', isMaintenance ? 'success' : 'error');
     } catch { toast('Failed to toggle maintenance mode.', 'error'); }
+  };
+
+  const handleSeedScholars = async () => {
+    const success = await seedScholars();
+    if (success) toast('Scholars Seeded Successfully! 🏆', 'success');
+    else toast('Seeding Failed.', 'error');
   };
 
   const handleResolveTicket = async (id, isResolved) => {
@@ -733,6 +740,18 @@ const AdminDashboard = ({ onNavigate }) => {
                       <button className="citadel-btn-main secondary w-full" onClick={handleBroadcast}>
                         TRANSMIT BANNER
                       </button>
+                    </div>
+
+                    <div className="admin-danger-zone mt-8 pt-6 border-t border-red-500/20">
+                      <h3 className="text-red-400 font-bold mb-4">Development Utilities</h3>
+                      <button 
+                        className="citadel-btn-main w-full" 
+                        style={{background: 'rgba(59, 130, 246, 0.1)', borderColor: 'rgba(59, 130, 246, 0.3)', color: '#60a5fa'}}
+                        onClick={handleSeedScholars}
+                      >
+                        🚀 SEED REPUTATION SCHOLARS (INDIAN)
+                      </button>
+                      <p className="text-[10px] opacity-40 mt-2 text-center">Populates leaderboard with high-ranking scholars for social proof.</p>
                     </div>
                   </div>
                 </div>

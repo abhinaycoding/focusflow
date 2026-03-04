@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { db } from '../lib/firebase'
-import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, orderBy, serverTimestamp } from 'firebase/firestore'
+import { collection, query, where, getDocs, addDoc, updateDoc, deleteDoc, doc, getDoc, orderBy, serverTimestamp, increment } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
 import { useTranslation } from '../contexts/LanguageContext'
@@ -106,6 +106,14 @@ const ExamPlannerPage = ({ onNavigate }) => {
     setTopics(prev => prev.map(t => t.id === id ? { ...t, completed: !current } : t))
     try {
       await updateDoc(doc(db, 'tasks', id), { completed: !current })
+      
+      // Award XP: 50 XP per topic and total tasks done
+      if (!current) {
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          xp: increment(50),
+          total_tasks_done: increment(1)
+        })
+      }
       if (!current) toast('Topic covered. Keep going!', 'success')
     } catch (err) {
       console.error(err)

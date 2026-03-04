@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react'
+import { useAuth } from '../contexts/AuthContext'
 import './XPBar.css'
 
 // ── Levels ──────────────────────────────────────────────────────────────────
@@ -181,72 +182,47 @@ const BadgesModal = ({ onClose, xp, stats, earnedBadgeIds }) => {
 
 // ── Main XPBar Component ──────────────────────────────────────────────────────
 const XPBar = () => {
-  const [xp, setXP] = useState(() => parseInt(localStorage.getItem(STORAGE_XP_KEY) || '0', 10))
-  const [stats, setStats] = useState(() => ({
-    tasksCompleted: 0, sessionsCompleted: 0, streak: 0, roomsJoined: 0, totalMinutes: 0,
-    totalXP: parseInt(localStorage.getItem(STORAGE_XP_KEY) || '0', 10),
-    ...loadStats()
-  }))
+  const { profile } = useAuth()
+  const xp = profile?.xp || 0
+  const stats = {
+    tasksCompleted: profile?.total_tasks_done || 0,
+    sessionsCompleted: profile?.total_sessions_done || 0, // Note: We might need to add total_sessions_done pulse if applicable, for now it maps to tasks/hours
+    roomsJoined: profile?.rooms_joined || 0,
+    totalMinutes: Math.round((profile?.total_study_seconds || 0) / 60),
+    totalXP: xp,
+  }
   const [earnedBadgeIds, setEarnedBadgeIds] = useState(() => loadEarnedBadges())
 
   const [showModal, setShowModal] = useState(false)
   const [xpToast, setXpToast] = useState(null)
   const [levelUpToast, setLevelUpToast] = useState(null)
   const [badgeToast, setBadgeToast] = useState(null)
-  const [prevLevelIdx, setPrevLevelIdx] = useState(() => getLevel(parseInt(localStorage.getItem(STORAGE_XP_KEY) || '0', 10)).index)
+  const [prevLevelIdx, setPrevLevelIdx] = useState(() => getLevel(xp).index)
 
-  // Award XP internally
-  const awardXP = useCallback((amount, statsUpdate = {}) => {
-    setXP(prev => {
-      const newXP = prev + amount
-      localStorage.setItem(STORAGE_XP_KEY, String(newXP))
-
-      // Update cumulative stats
-      setStats(prevStats => {
-        const newStats = {
-          ...prevStats,
-          totalXP: newXP,
-          tasksCompleted: (prevStats.tasksCompleted || 0) + (statsUpdate.tasksCompleted || 0),
-          sessionsCompleted: (prevStats.sessionsCompleted || 0) + (statsUpdate.sessionsCompleted || 0),
-          roomsJoined: (prevStats.roomsJoined || 0) + (statsUpdate.roomsJoined || 0),
-          totalMinutes: (prevStats.totalMinutes || 0) + (statsUpdate.totalMinutes || 0),
-          streak: statsUpdate.streak !== undefined ? statsUpdate.streak : (prevStats.streak || 0),
-        }
-        saveStats(newStats)
-
-        // Check badge unlocks
-        setEarnedBadgeIds(prevBadges => {
-          const newBadges = [...prevBadges]
-          let newUnlock = null
-          ALL_BADGES.forEach(badge => {
-            if (!newBadges.includes(badge.id) && badge.check(newStats)) {
-              newBadges.push(badge.id)
-              newUnlock = badge
-            }
-          })
-          if (newUnlock) {
-            saveEarnedBadges(newBadges)
-            setTimeout(() => setBadgeToast(newUnlock), 500)
-          }
-          return newBadges
-        })
-        return newStats
-      })
-
-      return newXP
-    })
-    setXpToast(amount)
-  }, [])
-
-  // Listen for XP events
+  // Listen for XP events (For UI Toasts ONLY)
   useEffect(() => {
     const handleXP = (e) => {
       const amount = e.detail?.amount || 0
-      awardXP(amount, e.detail?.stats || {})
+      setXpToast(amount)
+      
+      // Secondary check for badge unlocks on event
+      const newBadges = [...earnedBadgeIds]
+      let newUnlock = null
+      ALL_BADGES.forEach(badge => {
+        if (!newBadges.includes(badge.id) && badge.check(stats)) {
+          newBadges.push(badge.id)
+          newUnlock = badge
+        }
+      })
+      if (newUnlock) {
+        setEarnedBadgeIds(newBadges)
+        saveEarnedBadges(newBadges)
+        setTimeout(() => setBadgeToast(newUnlock), 500)
+      }
     }
     window.addEventListener('xp-earned', handleXP)
     return () => window.removeEventListener('xp-earned', handleXP)
-  }, [awardXP])
+  }, [earnedBadgeIds, stats])
 
   // Listen for task/session events
   useEffect(() => {

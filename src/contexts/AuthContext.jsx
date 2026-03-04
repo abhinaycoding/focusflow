@@ -100,6 +100,40 @@ export const AuthProvider = ({ children }) => {
     }
   }, [hydrateProfile])
 
+  // Migration: Sync localStorage stats to Firestore if Firestore is empty
+  useEffect(() => {
+    if (!profileReady || !profile || !user?.uid) return
+
+    const syncLegacyStats = async () => {
+      try {
+        const localXP = parseInt(localStorage.getItem('notenook_xp') || '0', 10)
+        const localStats = JSON.parse(localStorage.getItem('notenook_stats') || '{}')
+        
+        // Check if any fields are missing or significantly behind in Firestore
+        const needsXP = (profile.xp || 0) < localXP
+        const needsTasks = (profile.total_tasks_done || 0) < (localStats.tasksCompleted || 0)
+        const needsHours = (profile.total_study_seconds || 0) < (localStats.totalMinutes || 0) * 60
+        const needsSessions = (profile.total_sessions_done || 0) < (localStats.sessionsCompleted || 0)
+
+        if (needsXP || needsTasks || needsHours || needsSessions) {
+          console.log('Syncing legacy stats to Firestore...')
+          const updateData = { migrated_at: serverTimestamp() }
+          if (needsXP) updateData.xp = localXP
+          if (needsTasks) updateData.total_tasks_done = localStats.tasksCompleted
+          if (needsHours) updateData.total_study_seconds = localStats.totalMinutes * 60
+          if (needsSessions) updateData.total_sessions_done = localStats.sessionsCompleted
+          
+          await updateDoc(doc(db, 'profiles', user.uid), updateData)
+          localStorage.setItem('xp_migrated', 'true')
+        }
+      } catch (err) {
+        console.warn('XP Migration failed:', err.message)
+      }
+    }
+
+    syncLegacyStats()
+  }, [profileReady, profile, user?.uid])
+
   // Heartbeat for online status
   useEffect(() => {
     if (!user?.uid) return

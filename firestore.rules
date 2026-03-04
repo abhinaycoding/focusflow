@@ -55,19 +55,19 @@ service cloud.firestore {
 
     // 2. User-scoped collections: read docs where user_id == auth uid, write if setting user_id to own uid
     match /sessions/{docId} {
-      allow read: if request.auth != null && resource.data.user_id == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && (request.resource.data.user_id == request.auth.uid || isAdmin());
+      allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
     match /tasks/{docId} {
-      allow read: if request.auth != null && resource.data.user_id == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && (request.resource.data.user_id == request.auth.uid || isAdmin());
+      allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
     match /notes/{docId} {
-      allow read: if request.auth != null && resource.data.user_id == request.auth.uid;
-      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
-      allow update, delete: if request.auth != null && resource.data.user_id == request.auth.uid;
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow create: if request.auth != null && (request.resource.data.user_id == request.auth.uid || isAdmin());
+      allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
     match /notifications/{docId} {
       allow read: if request.auth != null && resource.data.user_id == request.auth.uid;

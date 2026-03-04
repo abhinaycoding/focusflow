@@ -143,6 +143,14 @@ const GoalsPage = ({ onNavigate }) => {
     
     try {
       await updateDoc(doc(db, 'tasks', id), { completed: !current })
+      
+      // Award XP: 50 XP per task and total tasks done
+      if (!current) {
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          xp: increment(50),
+          total_tasks_done: increment(1)
+        })
+      }
       if (!current) {
         toast(t('goals.goalAchieved'), 'success')
         addNotification(t('goals.goalAchieved'), t('goals.goalAchievedNotif'), 'success')

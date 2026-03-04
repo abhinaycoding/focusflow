@@ -10,7 +10,8 @@ import {
   where, 
   orderBy, 
   onSnapshot,
-  serverTimestamp 
+  serverTimestamp,
+  increment 
 } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useToast } from '../contexts/ToastContext'
@@ -111,6 +112,15 @@ const TaskPlanner = () => {
         updateData.completed_at = null
       }
       await updateDoc(doc(db, 'tasks', id), updateData)
+      
+      // Award XP: 50 XP per task and total tasks done
+      if (!current) {
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          xp: increment(50),
+          total_tasks_done: increment(1)
+        })
+      }
+
       window.dispatchEvent(new CustomEvent('task-updated', { detail: { id, completed: !current } }))
       
       if (!current) {

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { db } from '../lib/firebase'
-import { collection, query, where, getDocs, updateDoc, doc } from 'firebase/firestore'
+import { collection, query, where, getDocs, updateDoc, doc, increment } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useTranslation } from '../contexts/LanguageContext'
 import '../pages/Dashboard.css' // uses ledger styles
@@ -84,6 +84,12 @@ const DangerZone = () => {
 
     try {
       await updateDoc(doc(db, 'tasks', id), { completed: true })
+      
+      // Award XP: 50 XP per urgent task and total tasks done
+      await updateDoc(doc(db, 'profiles', user.uid), {
+        xp: increment(50),
+        total_tasks_done: increment(1)
+      })
     } catch (err) {
       if (taskBackup) {
         setUrgentTasks(prev => [taskBackup, ...prev])

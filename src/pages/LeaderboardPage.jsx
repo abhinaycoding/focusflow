@@ -25,25 +25,6 @@ const LeaderboardPage = ({ onNavigate }) => {
         const profilesSnap = await getDocs(collection(db, 'profiles'))
         const profiles = profilesSnap.docs.map(d => ({ uid: d.id, ...d.data() }))
 
-        // Fetch tasks and sessions for stats
-        const [tasksSnap, sessionsSnap] = await Promise.all([
-          getDocs(query(collection(db, 'tasks'), where('completed', '==', true))),
-          getDocs(query(collection(db, 'sessions'), where('completed', '==', true)))
-        ])
-
-        // Aggregate per user
-        const taskCount = {}
-        tasksSnap.docs.forEach(d => {
-          const uid = d.data().user_id
-          if (uid) taskCount[uid] = (taskCount[uid] || 0) + 1
-        })
-
-        const studySeconds = {}
-        sessionsSnap.docs.forEach(d => {
-          const { user_id, duration_seconds } = d.data()
-          if (user_id) studySeconds[user_id] = (studySeconds[user_id] || 0) + (duration_seconds || 0)
-        })
-
         const enriched = profiles.map(p => ({
           uid: p.uid,
           name: p.full_name || 'Anonymous Scholar',
@@ -52,8 +33,8 @@ const LeaderboardPage = ({ onNavigate }) => {
           studentType: p.student_type || '',
           isPro: p.is_pro || false,
           xp: p.xp || 0,
-          tasks: taskCount[p.uid] || 0,
-          hours: parseFloat(((studySeconds[p.uid] || 0) / 3600).toFixed(1)),
+          tasks: p.total_tasks_done || 0,
+          hours: parseFloat(((p.total_study_seconds || 0) / 3600).toFixed(1)),
         }))
 
         setScholars(enriched)

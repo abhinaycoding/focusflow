@@ -94,7 +94,7 @@ const PublicProfilePage = ({ onNavigate }) => {
     }
   }
 
-  const xp = parseInt(localStorage.getItem('notenook_xp') || '0', 10)
+  const xp = profile?.xp || 0
   const earnedBadgeIds = (() => {
     try { return JSON.parse(localStorage.getItem('notenook_badges') || '[]') } catch { return [] }
   })()
@@ -117,22 +117,15 @@ const PublicProfilePage = ({ onNavigate }) => {
   }
 
   useEffect(() => {
-    if (!user?.uid) return
-    const load = async () => {
-      try {
-        const [sessSnap, taskSnap] = await Promise.all([
-          getDocs(query(collection(db, 'sessions'), where('user_id', '==', user.uid), where('completed', '==', true))),
-          getDocs(query(collection(db, 'tasks'), where('user_id', '==', user.uid)))
-        ])
-        const sessions = sessSnap.docs.map(d => d.data())
-        const tasks = taskSnap.docs.map(d => d.data())
-        const totalMins = sessions.reduce((sum, s) => sum + Math.round((s.duration_seconds || 0) / 60), 0)
-        const completedTasks = tasks.filter(t => t.completed).length
-        setStats({ sessions: sessions.length, totalHours: (totalMins / 60).toFixed(1), tasks: tasks.length, completedTasks })
-      } catch (e) { console.warn(e) } finally { setLoading(false) }
-    }
-    load()
-  }, [user?.uid])
+    if (!profile) return
+    setStats({
+      sessions: profile.total_sessions_done || 0, // Fallback if we haven't added this yet
+      totalHours: ((profile.total_study_seconds || 0) / 3600).toFixed(1),
+      tasks: profile.total_tasks_done || 0,
+      completedTasks: profile.total_tasks_done || 0
+    })
+    setLoading(false)
+  }, [profile])
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href).then(() => {

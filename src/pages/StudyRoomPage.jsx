@@ -14,7 +14,8 @@ import {
   serverTimestamp,
   limit,
   getDocs,
-  Timestamp
+  Timestamp,
+  increment
 } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { useTimer } from '../contexts/TimerContext'
@@ -311,6 +312,14 @@ const StudyRoomPage = ({ roomId, roomName, onNavigate, onBack }) => {
   const toggleTask = async (task) => {
     try {
       await updateDoc(doc(db, 'room_tasks', task.id), { completed: !task.completed })
+      
+      // Award XP: 50 XP per task and total tasks done
+      if (!task.completed) {
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          xp: increment(50),
+          total_tasks_done: increment(1)
+        })
+      }
     } catch (err) {
       toast('Failed to update task.', 'error')
     }

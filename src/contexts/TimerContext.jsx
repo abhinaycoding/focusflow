@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useRef, useContext } from 'react'
 import { db } from '../lib/firebase'
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore'
+import { collection, addDoc, serverTimestamp, updateDoc, doc, increment } from 'firebase/firestore'
 import { useAuth } from './AuthContext'
 
 const TimerContext = createContext({})
@@ -55,6 +55,14 @@ export const TimerProvider = ({ children }) => {
           completed: true,
           created_at: serverTimestamp(),
         })
+
+        // Award XP: 10 XP per study minute and total study seconds/sessions
+        await updateDoc(doc(db, 'profiles', user.uid), {
+          xp: increment(selectedMinutes * 10),
+          total_study_seconds: increment(selectedMinutes * 60),
+          total_sessions_done: increment(1)
+        })
+
         window.dispatchEvent(new CustomEvent('session-saved', { detail: { duration: selectedMinutes * 60 } }))
       } catch (err) {
         console.error('Session save error:', err.message)
