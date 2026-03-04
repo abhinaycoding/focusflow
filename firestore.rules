@@ -63,7 +63,7 @@ service cloud.firestore {
       allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
     match /tasks/{docId} {
-      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
+      allow read: if request.auth != null && (resource.data.user_id == request.auth.uid || resource.data.completed == true || isAdmin());
       allow create: if request.auth != null && (request.resource.data.user_id == request.auth.uid || isAdmin());
       allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
