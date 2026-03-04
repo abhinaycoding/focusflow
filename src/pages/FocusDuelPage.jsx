@@ -262,7 +262,7 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
         <div className="duel-hub-hero">
           <div className="duel-hub-emblem">⚔️</div>
           <h1 className="duel-hub-title">Focus Duel</h1>
-          <p className="duel-hub-sub">Challenge a friend. Whoever breaks focus first loses XP.</p>
+          <p className="duel-hub-sub">Lock in. Stay focused. The first one to blink loses their XP.</p>
         </div>
 
         <div className="duel-hub-friends">
