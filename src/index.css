@@ -601,6 +601,87 @@ button {
   margin: 2rem 0;
 }
 
+/* ── Aura Glass System ── */
+.aura-glass {
+  background: rgba(var(--bg-card-rgb), 0.6) !important;
+  backdrop-filter: blur(24px) saturate(180%) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(180%) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+.aura-warp-entry {
+  animation: aura-warp-in 0.8s cubic-bezier(0.19, 1, 0.22, 1) both;
+  transform-origin: center center;
+}
+
+@keyframes aura-warp-in {
+  0% { 
+    opacity: 0; 
+    transform: translateY(10px);
+  }
+  100% { 
+    opacity: 1; 
+    transform: translateY(0);
+  }
+}
+
+[data-theme="dark"] .aura-glass,
+[data-theme="midnight"] .aura-glass,
+[data-theme="forest"] .aura-glass,
+[data-theme="rosewood"] .aura-glass {
+  border: 1px solid rgba(255, 255, 255, 0.05) !important;
+  background: rgba(var(--bg-card-rgb), 0.4) !important;
+}
+
+.aura-edge-glow::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  background: linear-gradient(135deg, transparent, rgba(var(--primary-rgb), 0.2), transparent);
+  border-radius: inherit;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.holographic-foil {
+  position: relative;
+  overflow: hidden;
+}
+
+.holographic-foil::before {
+  content: "";
+  position: absolute;
+  top: -100%;
+  left: -100%;
+  width: 300%;
+  height: 300%;
+  background: linear-gradient(
+    115deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.03) 30%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(255, 255, 255, 0.1) 55%,
+    rgba(255, 255, 255, 0.03) 70%,
+    transparent 100%
+  );
+  transform: rotate(-15deg);
+  pointer-events: none;
+  z-index: 10;
+  transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
+}
+
+.holographic-foil:hover::before {
+  transform: translate(30%, 30%) rotate(-15deg);
+}
+
+.magnetic-item {
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
 .card {
   background: var(--bg-card);
   border: 1px solid var(--border);

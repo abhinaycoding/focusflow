@@ -230,6 +230,91 @@
   letter-spacing: 0.01em;
 }
 
+/* Career Stats */
+.duel-career-section {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  padding: 1.5rem 0;
+  margin-top: -1rem;
+}
+
+.duel-stat-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  text-align: center;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.duel-stat-card:hover {
+  transform: translateY(-2px);
+  border-color: rgba(249,115,22,0.3);
+}
+
+.duel-stat-val {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+.duel-stat-val.gold {
+  color: #fbbf24;
+  text-shadow: 0 0 12px rgba(251, 191, 36, 0.4);
+}
+
+.duel-stat-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+}
+
+.duel-nemesis-card {
+  grid-column: span 3;
+  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(13, 13, 17, 0.1));
+  border: 1px solid rgba(239, 68, 68, 0.2);
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 1.5rem;
+}
+
+.duel-nemesis-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  text-align: left;
+  align-items: flex-start;
+}
+
+.duel-nemesis-name {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #ef4444;
+}
+
+.duel-nemesis-tag {
+  font-size: 0.65rem;
+  font-weight: 700;
+  color: rgba(239, 68, 68, 0.8);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+.duel-nemesis-stat {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-secondary);
+}
+
 .duel-hub-section-label {
   font-size: 0.7rem;
   font-weight: 800;

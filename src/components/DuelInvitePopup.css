@@ -209,13 +209,28 @@
   position: relative;
   overflow: hidden;
 }
-.dip-accept::after {
+.dip-accept::before {
   content: '';
   position: absolute;
-  inset: 0;
-  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.2),
+    transparent
+  );
+  transition: 0.5s;
 }
-.dip-accept:hover { transform: translateY(-1px); box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 60%, transparent); }
+.dip-accept:hover::before {
+  left: 100%;
+}
+.dip-accept:hover {
+  transform: translateY(-1px) scale(1.02);
+  box-shadow: 0 6px 24px color-mix(in srgb, var(--primary) 70%, transparent);
+}
 .dip-accept:active { transform: scale(0.97); }
 
 /* ── Timer bar (auto-dismiss feel) ── */

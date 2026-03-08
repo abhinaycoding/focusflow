@@ -222,7 +222,7 @@ const GoalsPage = ({ onNavigate }) => {
             ) : (
               <div className="goals-list">
                 {goals.map(goal => (
-                  <div key={goal.id} className={`goal-row ${goal.completed ? 'done' : ''}`}>
+                  <div key={goal.id} className={`goal-row aura-glass holographic-foil ${goal.completed ? 'done' : ''}`}>
                     <div
                       className={`ledger-check cursor-pointer ${goal.completed ? 'done' : ''}`}
                       onClick={() => toggleGoal(goal.id, goal.completed)}
@@ -266,7 +266,7 @@ const GoalsPage = ({ onNavigate }) => {
               {BADGES.map(badge => {
                 const unlocked = badge.check(stats.sessions, stats.tasks, stats.hours)
                 return (
-                  <div key={badge.id} className={`badge-card ${unlocked ? 'unlocked' : 'locked'}`}>
+                  <div key={badge.id} className={`badge-card aura-glass holographic-foil ${unlocked ? 'unlocked' : 'locked'}`}>
                     <div className="badge-icon">{badge.icon}</div>
                     <div className="badge-label">{t(badge.labelKey)}</div>
                     <div className="badge-desc">{t(badge.descKey)}</div>

@@ -127,6 +127,20 @@ const TaskPlanner = () => {
         toast(t('tasks.taskComplete'), 'success')
         addNotification('Task Complete', t('tasks.taskCompleteNotif'), 'success')
         window.dispatchEvent(new CustomEvent('confetti-burst'))
+        
+        // Broadcast to activity feed (Non-critical, wrap in try/catch)
+        try {
+          await addDoc(collection(db, 'activities'), {
+            user_id: user.uid,
+            action:  'completed a task',
+            detail:  tasks.find(tk => tk.id === id)?.title || '',
+            icon:    '✅',
+            created_at: serverTimestamp()
+          })
+        } catch (actErr) {
+          console.warn('Activity logging suppressed (Check Firestore Rules):', actErr.message)
+        }
+
         const pop = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_f3152ef32d.mp3')
         pop.volume = 0.4
         pop.play().catch(e => console.log("Sound blocked:", e))
@@ -244,7 +258,7 @@ const TaskPlanner = () => {
 
       {/* ── Incomplete Tasks ── */}
       {incomplete.map(task => (
-        <div key={task.id} className="ledger-row" style={{ alignItems: 'center' }}>
+        <div key={task.id} className="ledger-row aura-glass holographic-foil" style={{ alignItems: 'center' }}>
           <div
             className={`ledger-check cursor-pointer ${task.completed ? 'done' : ''}`}
             onClick={() => toggleTask(task.id, task.completed)}

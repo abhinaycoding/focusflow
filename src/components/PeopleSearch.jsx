@@ -12,7 +12,7 @@ import './PeopleSearch.css'
 //   • Discover — search for new users and send friend requests
 //   • My Friends — view + accept incoming requests, see all current friends
 // ─────────────────────────────────────────────────────────────────────────────
-const PeopleSearch = ({ isOpen, onClose, onStartChat, onStartDuel }) => {
+const PeopleSearch = ({ isOpen, onClose, onStartChat, onStartDuel, initialTab }) => {
   const { user, profile } = useAuth()
 
   const [activeTab, setActiveTab]             = useState('discover') // 'discover' | 'friends'
@@ -106,6 +106,12 @@ const PeopleSearch = ({ isOpen, onClose, onStartChat, onStartDuel }) => {
   useEffect(() => {
     if (isOpen) loadFriendData()
   }, [isOpen, loadFriendData])
+
+  useEffect(() => {
+    if (isOpen && initialTab) {
+      setActiveTab(initialTab)
+    }
+  }, [isOpen, initialTab])
 
   // ─────────────────────────────────────────────────────────────────────────
   // Search debounce (Discover tab)

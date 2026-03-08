@@ -9,6 +9,7 @@ import SupportWidget from './SupportWidget';
 import DirectMessages from './DirectMessages';
 import PeopleSearch from './PeopleSearch';
 import DuelInvitePopup from './DuelInvitePopup';
+import AuraAI from './AuraAI';
 import './Layout.css';
 
 const toProperCase = (str) =>
@@ -58,6 +59,7 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
   const [dmOpen, setDmOpen] = useState(false);
   const [hasUnreadDMs, setHasUnreadDMs] = useState(false);
   const [peopleSearchOpen, setPeopleSearchOpen] = useState(false);
+  const [peopleSearchTab, setPeopleSearchTab] = useState('discover');
   const [dmInitialUser, setDmInitialUser] = useState(null);
   const avatarRef = useRef(null);
   const notifRef = useRef(null);
@@ -165,7 +167,13 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
               {/* People Search Button */}
               <button
                 className={`header-icon-btn ${peopleSearchOpen ? 'active' : ''}`}
-                onClick={() => { setPeopleSearchOpen(p => !p); setDmOpen(false); setAvatarOpen(false); setNotifOpen(false); }}
+                onClick={() => { 
+                  setPeopleSearchOpen(p => !p); 
+                  if (!peopleSearchOpen) setPeopleSearchTab('discover');
+                  setDmOpen(false); 
+                  setAvatarOpen(false); 
+                  setNotifOpen(false); 
+                }}
                 title="Find People"
                 style={{ position: 'relative' }}
               >
@@ -232,7 +240,11 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
                     ) : (
                       <div className="notif-list">
                         {notifications.map(n => (
-                          <div key={n.id} className="notif-item" onClick={() => { onNavigate('profile'); setNotifOpen(false); }}>
+                          <div key={n.id} className="notif-item" onClick={() => { 
+                            setPeopleSearchOpen(true);
+                            setPeopleSearchTab('friends');
+                            setNotifOpen(false); 
+                          }}>
                             <span className="notif-icon">👋</span>
                             <div>
                               <p className="notif-title">{toProperCase(n.fromName || 'Someone')} wants to be your friend!</p>
@@ -254,7 +266,11 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
                     <span className="user-name">{toProperCase(profile?.full_name) || 'Scholar'}</span>
                   </div>
                   <div className="user-avatar-mini">
-                    {(profile?.full_name?.[0] || 'S').toUpperCase()}
+                    {profile?.photo_url ? (
+                      <img src={profile.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      (profile?.full_name?.[0] || 'S').toUpperCase()
+                    )}
                     <span className="avatar-online-dot"></span>
                   </div>
                 </div>
@@ -262,7 +278,11 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
                   <div className="header-dropdown avatar-dropdown">
                     <div className="avatar-dropdown-head">
                       <div className="avatar-dropdown-avatar">
-                        {(profile?.full_name?.[0] || 'S').toUpperCase()}
+                        {profile?.photo_url ? (
+                          <img src={profile.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          (profile?.full_name?.[0] || 'S').toUpperCase()
+                        )}
                       </div>
                       <div>
                         <p className="avatar-dropdown-name">{toProperCase(profile?.full_name) || 'Scholar'}</p>
@@ -292,7 +312,9 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
           </header>
 
           <main className={`page-overflow-container ${fullBleed ? 'full-bleed' : ''}`}>
-            {children}
+            <div key={activeTab} className="aura-warp-entry">
+              {children}
+            </div>
           </main>
         </div>
       </div>
@@ -346,18 +368,19 @@ const Layout = ({ children, onNavigate, activeTab, fullBleed = false }) => {
         </div>
       )}
 
-      {['dashboard', 'settings', 'admin', 'pricing', 'landing', 'goals', 'analytics'].includes(activeTab) && <SupportWidget />}
+      <AuraAI />
       <DirectMessages 
         isOpen={dmOpen} 
         onClose={() => { setDmOpen(false); setDmInitialUser(null); }} 
         onUnreadChange={setHasUnreadDMs} 
         initialFriend={dmInitialUser} 
       />
-      <PeopleSearch 
-        isOpen={peopleSearchOpen} 
-        onClose={() => setPeopleSearchOpen(false)} 
-        onStartChat={(person) => {
-          setDmInitialUser(person);
+      <PeopleSearch
+        isOpen={peopleSearchOpen}
+        onClose={() => setPeopleSearchOpen(false)}
+        initialTab={peopleSearchTab}
+        onStartChat={(other) => {
+          setDmInitialUser(other);
           setPeopleSearchOpen(false);
           setDmOpen(true);
         }}

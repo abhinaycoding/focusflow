@@ -16,6 +16,7 @@ import StreakFlame from '../components/StreakFlame'
 import FriendActivityFeed from '../components/FriendActivityFeed'
 import XPBar from '../components/XPBar'
 import DailyScore from '../components/DailyScore'
+import ActiveDuelBanner from '../components/ActiveDuelBanner'
 import { db } from '../lib/firebase'
 import { collection, query, where, getDocs, orderBy } from 'firebase/firestore'
 import './Dashboard.css'
@@ -101,6 +102,7 @@ const Dashboard = ({ onNavigate }) => {
   return (
     <>
       <div className="dashboard-content">
+        <ActiveDuelBanner onNavigate={onNavigate} />
         {/* Welcome Greeting */}
         <div className="dashboard-greeting-section">
           <div className="welcome-greeting">

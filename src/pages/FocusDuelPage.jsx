@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react'
 import { db } from '../lib/firebase'
 import {
   collection, doc, addDoc, updateDoc, onSnapshot,
-  serverTimestamp, query, where, getDocs, getDoc, increment
+  serverTimestamp, query, where, getDocs, getDoc, increment, or, and
 } from 'firebase/firestore'
 import { useAuth } from '../contexts/AuthContext'
 import { usePlan } from '../contexts/PlanContext'
@@ -21,10 +21,15 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
   const { user, profile } = useAuth()
   const { isPro } = usePlan()
 
-  // State machine: 'hub' | 'challenge' | 'waiting' | 'arena' | 'result'
+  // State machine: 'hub' | 'challenge' | 'waiting' | 'countdown' | 'arena' | 'result'
   const [screen, setScreen]               = useState('hub')
   const [friends, setFriends]             = useState([])
   const [loadingFriends, setLoadingFriends] = useState(true)
+  
+  // Career Stats
+  const [careerStats, setCareerStats] = useState({
+    wins: 0, losses: 0, totalXp: 0, nemesis: null, loading: true
+  })
 
   // Challenge creation
   const [selectedFriend, setSelectedFriend] = useState(preselectedFriend || null)
@@ -49,6 +54,47 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
   const [myWarning, setMyWarning]             = useState(false)
   const [graceCount, setGraceCount]           = useState(5)
   const graceRef                              = useRef(null)
+
+  // ── Auto-discovery: Look for active duels on mount ─────────────────────────
+  useEffect(() => {
+    if (!user?.uid) return
+    const findActive = async () => {
+      const q = query(
+        collection(db, 'duels'),
+        and(
+          where('status', '==', 'active'),
+          or(
+            where('challenger_uid', '==', user.uid),
+            where('opponent_uid', '==', user.uid)
+          )
+        )
+      )
+      const snap = await getDocs(q)
+      if (!snap.empty) {
+        const found = snap.docs[0]
+        const data = { id: found.id, ...found.data() }
+        setDuelId(found.id)
+        setDuel(data)
+        
+        // Calculate remaining time
+        if (data.started_at) {
+          const startMs = data.started_at.toMillis()
+          const totalSecs = data.duration_mins * 60
+          const elapsedSecs = Math.floor((Date.now() - startMs) / 1000)
+          const remaining = Math.max(0, totalSecs - elapsedSecs)
+          
+          if (remaining > 0) {
+            setTimeLeft(remaining)
+            setScreen('arena')
+          } else {
+            // Duel should have ended
+            handleDuelComplete(found.id, data)
+          }
+        }
+      }
+    }
+    findActive()
+  }, [user?.uid])
 
   // ── Load friends ─────────────────────────────────────────────────────────
   useEffect(() => {
@@ -77,6 +123,59 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
     load()
   }, [user?.uid])
 
+  // ── Load Career Stats ─────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!user?.uid) return
+    const fetchStats = async () => {
+      try {
+        const q = query(
+          collection(db, 'duels'),
+          where('status', '==', 'completed'),
+          or(
+            where('challenger_uid', '==', user.uid),
+            where('opponent_uid', '==', user.uid)
+          )
+        )
+        const snap = await getDocs(q)
+        let wins = 0, losses = 0, totalXp = 0
+        const opponentCounts = {} // uid -> {count, name}
+
+        snap.docs.forEach(doc => {
+          const d = doc.data()
+          const won = d.winner_uid === user.uid
+          if (won) {
+            wins++
+            totalXp += (d.xp_stake || 0)
+          } else if (d.loser_uid === user.uid) {
+            losses++
+          }
+
+          const oppUid = d.challenger_uid === user.uid ? d.opponent_uid : d.challenger_uid
+          const oppName = d.challenger_uid === user.uid ? d.opponent_name : d.challenger_name
+          if (oppUid) {
+            if (!opponentCounts[oppUid]) opponentCounts[oppUid] = { count: 0, name: oppName }
+            opponentCounts[oppUid].count++
+          }
+        })
+
+        let nemesis = null
+        let maxCount = 0
+        Object.entries(opponentCounts).forEach(([uid, data]) => {
+          if (data.count > maxCount) {
+            maxCount = data.count
+            nemesis = { uid, name: data.name, count: data.count }
+          }
+        })
+
+        setCareerStats({ wins, losses, totalXp, nemesis, loading: false })
+      } catch (err) {
+        console.warn('Duel: stats error', err.message)
+        setCareerStats(prev => ({ ...prev, loading: false }))
+      }
+    }
+    fetchStats()
+  }, [user?.uid, screen]) // Refresh stats when screen changes (e.g. back to hub after duel)
+
   // ── Listen to active duel ─────────────────────────────────────────────────
   useEffect(() => {
     if (!duelId) return
@@ -85,7 +184,7 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
       const data = { id: snap.id, ...snap.data() }
       setDuel(data)
 
-      if (data.status === 'active' && screen === 'waiting') {
+      if (data.status === 'active' && (screen === 'waiting' || screen === 'hub' || screen === 'challenge')) {
         setScreen('countdown')
         setTimeLeft(data.duration_mins * 60)
       }
@@ -128,19 +227,27 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
 
   // ── Focus timer ───────────────────────────────────────────────────────────
   useEffect(() => {
-    if (screen !== 'arena') return
-    timerRef.current = setInterval(() => {
-      setTimeLeft(t => {
-        if (t <= 1) {
-          clearInterval(timerRef.current)
-          handleDuelComplete()
-          return 0
-        }
-        return t - 1
-      })
-    }, 1000)
+    if (screen !== 'arena' || !duel?.started_at) return
+    
+    const syncTimer = () => {
+      const startMs = duel.started_at.toMillis()
+      const totalSecs = duel.duration_mins * 60
+      const elapsedSecs = Math.floor((Date.now() - startMs) / 1000)
+      const remaining = Math.max(0, totalSecs - elapsedSecs)
+      
+      setTimeLeft(remaining)
+      
+      if (remaining <= 0) {
+        clearInterval(timerRef.current)
+        handleDuelComplete()
+      }
+    }
+
+    syncTimer() // Initial sync
+    timerRef.current = setInterval(syncTimer, 1000)
+    
     return () => clearInterval(timerRef.current)
-  }, [screen])
+  }, [screen, duel?.started_at, duel?.duration_mins])
 
   // ── Tab visibility detection ──────────────────────────────────────────────
   useEffect(() => {
@@ -221,6 +328,7 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
         started_at: serverTimestamp(),
       })
       setDuelId(incomingDuelId)
+      // Note: screen transition happens in the snapshot listener
     } catch (err) {
       console.warn('Duel: accept error', err.message)
     }
@@ -239,25 +347,62 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
         [amChallenger ? 'challenger_broke_at' : 'opponent_broke_at']: serverTimestamp()
       })
       // XP transfer
-      await updateDoc(doc(db, 'profiles', loserUid),  { xp: increment(-duel.xp_stake) })
-      await updateDoc(doc(db, 'profiles', winnerUid), { xp: increment(duel.xp_stake)  })
+      await updateDoc(doc(db, 'profiles', loserUid),  { 
+        xp: increment(-duel.xp_stake),
+        duels_lost: increment(1),
+        duels_completed: increment(1)
+      })
+      await updateDoc(doc(db, 'profiles', winnerUid), { 
+        xp: increment(duel.xp_stake),
+        duels_won: increment(1),
+        duels_completed: increment(1)
+      })
+      
+      // Broadcast to activity feed
+      await addDoc(collection(db, 'activities'), {
+        user_id: winnerUid,
+        action:  'won a focus duel',
+        detail:  `against ${amChallenger ? duel.challenger_name : duel.opponent_name}`,
+        icon:    '🏆',
+        created_at: serverTimestamp()
+      })
     } catch (err) {
       console.warn('Duel: forfeit error', err.message)
     }
   }, [duelId, duel, user?.uid])
 
-  const handleDuelComplete = useCallback(async () => {
-    if (!duelId || !duel) return
+  const handleDuelComplete = useCallback(async (forcedId, forcedDuel) => {
+    const dId = forcedId || duelId
+    const d   = forcedDuel || duel
+    if (!dId || !d) return
     // Both survived — both get bonus XP
     try {
-      await updateDoc(doc(db, 'duels', duelId), {
+      await updateDoc(doc(db, 'duels', dId), {
         status:     'completed',
         winner_uid: 'both',
         loser_uid:  null,
       })
-      const bonus = Math.round(duel.xp_stake * 0.5)
-      await updateDoc(doc(db, 'profiles', duel.challenger_uid), { xp: increment(bonus) })
-      await updateDoc(doc(db, 'profiles', duel.opponent_uid),   { xp: increment(bonus) })
+      const bonus = Math.round(d.xp_stake * 0.5)
+      await updateDoc(doc(db, 'profiles', d.challenger_uid), { 
+        xp: increment(bonus),
+        duels_completed: increment(1)
+      })
+      await updateDoc(doc(db, 'profiles', d.opponent_uid),   { 
+        xp: increment(bonus),
+        duels_completed: increment(1)
+      })
+
+      // Broadcast to activity feed for both
+      const act = {
+        action: 'focused for a full duel',
+        detail: `${d.duration_mins} minutes with ${d.challenger_name === profile.full_name ? d.opponent_name : d.challenger_name}`,
+        icon: '⚔️',
+        created_at: serverTimestamp()
+      }
+      await Promise.all([
+        addDoc(collection(db, 'activities'), { ...act, user_id: d.challenger_uid }),
+        addDoc(collection(db, 'activities'), { ...act, user_id: d.opponent_uid })
+      ])
     } catch (err) {
       console.warn('Duel: complete error', err.message)
     }
@@ -287,6 +432,36 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
           <h1 className="duel-hub-title">Focus Duel</h1>
           <p className="duel-hub-sub">Lock in. Stay focused. The first one to blink loses their XP.</p>
         </div>
+
+        {/* Career Stats */}
+        {!careerStats.loading && (careerStats.wins > 0 || careerStats.losses > 0) && (
+          <div className="duel-career-section">
+            <div className="duel-stat-card">
+              <span className="duel-stat-val gold">{careerStats.wins}</span>
+              <span className="duel-stat-label">Wins</span>
+            </div>
+            <div className="duel-stat-card">
+              <span className="duel-stat-val">{Math.round((careerStats.wins / (careerStats.wins + careerStats.losses || 1)) * 100)}%</span>
+              <span className="duel-stat-label">Win Rate</span>
+            </div>
+            <div className="duel-stat-card">
+              <span className="duel-stat-val gold">{careerStats.totalXp}</span>
+              <span className="duel-stat-label">Total Gained</span>
+            </div>
+            
+            {careerStats.nemesis && (
+              <div className="duel-stat-card duel-nemesis-card">
+                <div className="duel-nemesis-info">
+                  <span className="duel-nemesis-tag">Current Nemesis</span>
+                  <span className="duel-nemesis-name">{careerStats.nemesis.name}</span>
+                </div>
+                <div className="duel-nemesis-stat">
+                  {careerStats.nemesis.count} ⚔️ Face-offs
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="duel-hub-friends">
           <div className="duel-hub-section-label">Choose your opponent</div>
@@ -343,7 +518,10 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
 
           <div className="duel-vs-row">
             <div className="duel-vs-avatar you">
-              {profile?.photo_url ? <img src={profile.photo_url} alt="You" /> : profile?.full_name?.[0] || 'Y'}
+              {profile?.photo_url 
+                ? <img src={profile.photo_url} alt="You" /> 
+                : (profile?.avatar_emoji || profile?.full_name?.[0] || 'Y')
+              }
               <span className="duel-vs-label">YOU</span>
             </div>
             <div className="duel-vs-center">
@@ -594,9 +772,9 @@ const FocusDuelPage = ({ onNavigate, preselectedFriend }) => {
           )}
 
           <div className="duel-result-actions">
-            <button className="duel-result-btn rematch" onClick={() => {
-              setDuelId(null); setDuel(null); setScreen('challenge')
-            }}>⚔️ Rematch</button>
+            <button className="duel-result-btn rematch" onClick={sendChallenge}>
+              ⚔️ Challenge Again
+            </button>
             <button className="duel-result-btn home" onClick={() => onNavigate('dashboard')}>
               Home
             </button>

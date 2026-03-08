@@ -15,6 +15,7 @@ import {
   useSortable
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useMagnetic } from '../hooks/useMagnetic';
 
 import TaskPlanner from './TaskPlanner';
 import NotesPreview from './NotesPreview';
@@ -40,6 +41,8 @@ const DashboardWidget = ({ id, title, children, isEditing, index }) => {
     isDragging
   } = useSortable({ id, disabled: !isEditing });
 
+  const { ref: magneticRef, style: magneticStyle } = useMagnetic(!isEditing);
+
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
@@ -50,9 +53,16 @@ const DashboardWidget = ({ id, title, children, isEditing, index }) => {
   };
 
   return (
-    <section ref={setNodeRef} style={style} className={`dash-section dashboard-widget widget-reveal ${isEditing ? 'is-editing' : ''}`}>
+    <section 
+      ref={(node) => {
+        setNodeRef(node);
+        magneticRef.current = node;
+      }} 
+      style={{ ...style, ...magneticStyle }} 
+      className={`dash-section dashboard-widget aura-glass aura-edge-glow holographic-foil widget-reveal ${isEditing ? 'is-editing' : 'magnetic-item'}`}
+    >
       <div className="flex justify-between items-center mb-4">
-        <h2 className="text-xl font-serif text-muted italic">{title}</h2>
+        <h2 className="text-xl font-serif text-muted italic" style={{ transform: 'translateZ(20px)' }}>{title}</h2>
         {isEditing && (
           <div 
             {...attributes} 

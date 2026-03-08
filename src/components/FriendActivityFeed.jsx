@@ -30,43 +30,39 @@ const FriendActivityFeed = () => {
       }
 
       try {
-        // ── Fetch profiles by document ID (not a field called 'id') ──
         const profileDocs = await Promise.all(
           friendIds.map(uid => getDoc(doc(db, 'profiles', uid)))
         )
         const profileMap = {}
         profileDocs.forEach(d => { if (d.exists()) profileMap[d.id] = d.data() })
 
-        // ── Fetch completed tasks in chunks of 10 (Firestore 'in' limit) ──
         const all = []
         const chunks = []
         for (let i = 0; i < friendIds.length; i += 10) chunks.push(friendIds.slice(i, i + 10))
 
         for (const chunk of chunks) {
           const snap = await getDocs(query(
-            collection(db, 'tasks'),
+            collection(db, 'activities'),
             where('user_id', 'in', chunk),
-            where('completed', '==', true),
-            orderBy('completed_at', 'desc'),
-            limit(30)
+            orderBy('created_at', 'desc'),
+            limit(20)
           ))
           snap.docs.forEach(d => {
-            const t = { id: d.id, ...d.data() }
+            const act = d.data()
             all.push({
-              id:        t.id,
-              userId:    t.user_id,
-              name:      profileMap[t.user_id]?.full_name || 'A friend',
-              photo:     profileMap[t.user_id]?.photo_url || null,
-              emoji:     profileMap[t.user_id]?.avatar_emoji || null,
-              action:    'completed a task',
-              detail:    t.title,
-              timestamp: t.completed_at,
-              icon:      '✅',
+              id:        d.id,
+              userId:    act.user_id,
+              name:      profileMap[act.user_id]?.full_name || 'A friend',
+              photo:     profileMap[act.user_id]?.photo_url || null,
+              emoji:     profileMap[act.user_id]?.avatar_emoji || null,
+              action:    act.action,
+              detail:    act.detail,
+              timestamp: act.created_at,
+              icon:      act.icon,
             })
           })
         }
 
-        // Sort newest first
         all.sort((a, b) => {
           const ta = a.timestamp?.toDate ? a.timestamp.toDate() : new Date(a.timestamp || 0)
           const tb = b.timestamp?.toDate ? b.timestamp.toDate() : new Date(b.timestamp || 0)
@@ -91,8 +87,15 @@ const FriendActivityFeed = () => {
       fetchActivities(ids)
     }
 
-    const u1 = onSnapshot(q1, snap => { sentIds = snap.docs.map(d => d.data().to);   rebuild() })
-    const u2 = onSnapshot(q2, snap => { receivedIds = snap.docs.map(d => d.data().from); rebuild() })
+    const u1 = onSnapshot(q1, snap => { 
+      sentIds = snap.docs.map(d => d.data().to || d.data().to_uid).filter(Boolean);   
+      rebuild() 
+    }, err => console.warn('Sent Requests Listener Failed:', err.message))
+
+    const u2 = onSnapshot(q2, snap => { 
+      receivedIds = snap.docs.map(d => d.data().from || d.data().from_uid).filter(Boolean); 
+      rebuild() 
+    }, err => console.warn('Received Requests Listener Failed:', err.message))
 
     return () => { u1(); u2() }
   }, [user?.uid])
@@ -137,7 +140,11 @@ const FriendActivityFeed = () => {
         {activities.map((act, i) => (
           <div key={act.id + i} className="feed-item">
             <div className="feed-item-avatar">
-              {act.name?.[0]?.toUpperCase() || '?'}
+              {act.photo ? (
+                <img src={act.photo} alt={act.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+              ) : (
+                act.emoji || act.name?.[0]?.toUpperCase() || '?'
+              )}
             </div>
             <div className="feed-item-body">
               <span className="feed-item-name">{act.name.split(' ')[0]}</span>

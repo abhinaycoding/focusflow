@@ -128,7 +128,11 @@ const ProfileCustomizerPage = ({ onNavigate }) => {
         <div className="pcp-preview-overlay" />
         <div className="pcp-preview-content">
           <div className={`pcp-preview-avatar ${selectedBorderObj?.cssClass || ''}`}>
-            {profile?.avatar_emoji || profile?.full_name?.[0] || '🎓'}
+            {profile?.photo_url ? (
+              <img src={profile.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+            ) : (
+              profile?.avatar_emoji || profile?.full_name?.[0] || '🎓'
+            )}
           </div>
           <div className="pcp-preview-info">
             <h1 className="pcp-preview-name">{profile?.full_name || 'Your Name'}</h1>
@@ -229,7 +233,11 @@ const ProfileCustomizerPage = ({ onNavigate }) => {
                     onClick={() => setSelectedBorder(b.id)}
                   >
                     <div className={`pcp-border-preview-avatar ${b.cssClass}`}>
-                      {profile?.avatar_emoji || profile?.full_name?.[0] || '🎓'}
+                      {profile?.photo_url ? (
+                        <img src={profile.photo_url} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                      ) : (
+                        profile?.avatar_emoji || profile?.full_name?.[0] || '🎓'
+                      )}
                     </div>
                     <span className="pcp-border-name">{b.label}</span>
                     {selectedBorder === b.id && <div className="pcp-selected-dot" />}
