@@ -159,10 +159,8 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
         if (change.type === 'added') {
           const signal = change.doc.data()
           const sender = signal.sender
+          // Payload extraction
           const payload = JSON.parse(signal.data)
-
-          // Delete signal after processing so it doesn't pile up
-          deleteDoc(change.doc.ref).catch(() => {})
 
           if (signal.type === 'offer') {
             const pc = createPeer(sender)
@@ -170,7 +168,7 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
             flushCandidateQueue(sender, pc)
             const answer = await pc.createAnswer()
             await pc.setLocalDescription(answer)
-            addDoc(collection(db, signalsPath), {
+            await addDoc(collection(db, signalsPath), {
               room_id: roomId,
               channel_id: channelId,
               sender: user.uid,
@@ -195,6 +193,9 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
               candidateQueueRef.current[sender].push(candidate)
             }
           }
+
+          // Delete signal only AFTER successful processing
+          await deleteDoc(change.doc.ref).catch(() => {})
         }
       })
     })

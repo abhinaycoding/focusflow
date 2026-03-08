@@ -32,20 +32,28 @@ export const getZuzuResponse = async (history, message) => {
   messages.push(...recentHistory);
   messages.push({ role: 'user', content: message });
 
-  try {
-    const chatResponse = await client.chat.complete({
-      model: 'mistral-small-latest',
-      messages: messages,
-    });
+  let retries = 2;
+  while (retries > 0) {
+    try {
+      const chatResponse = await client.chat.complete({
+        model: 'mistral-small-latest',
+        messages: messages,
+      });
 
-    return chatResponse.choices[0].message.content;
-  } catch (error) {
-    console.error("Mistral AI Error:", error);
-    
-    if (error.message?.includes("429")) {
-      return "I am currently processing high-priority calculations. Please allow my neural bridge to cool down for a moment.";
+      return chatResponse.choices[0].message.content;
+    } catch (error) {
+      console.error(`Mistral AI Attempt ${3 - retries} Error:`, error);
+      
+      if (error.message?.includes("429")) {
+        return "I am currently processing high-priority calculations. Please allow my neural bridge to cool down for a moment.";
+      }
+
+      retries--;
+      if (retries === 0) {
+        return "The neural connection is flickering. Please try sending your command once more, Strategist.";
+      }
+      // Wait a bit before retry
+      await new Promise(resolve => setTimeout(resolve, 1000));
     }
-    
-    return "I am experiencing a momentary sync delay. Please retry, Strategist.";
   }
 };
