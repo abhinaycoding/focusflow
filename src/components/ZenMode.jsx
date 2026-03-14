@@ -48,14 +48,19 @@ const ZenMode = () => {
     if (audioRef.current) {
       audioRef.current.volume = volume
       
-      if (playing) {
-        audioRef.current.play().catch(e => {
-          console.error("Audio block:", e)
+      const playAudio = async () => {
+        try {
+          if (playing) {
+            await audioRef.current.play()
+          } else {
+            audioRef.current.pause()
+          }
+        } catch (e) {
+          console.warn("[ZenMode] Audio play blocked/failed:", e.message)
           setPlaying(false)
-        })
-      } else {
-        audioRef.current.pause()
+        }
       }
+      playAudio()
     }
   }, [playing, volume, currentTrack, mounted])
 
@@ -200,6 +205,8 @@ const ZenMode = () => {
       </div>
     </div>
   )
+
+  if (!mounted || !isZenModeActive) return null
 
   return createPortal(content, document.body)
 }

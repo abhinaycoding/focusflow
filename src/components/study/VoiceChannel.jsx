@@ -61,14 +61,18 @@ const VoiceChannel = ({ roomId, channelId, channelName, user, members }) => {
     }
 
     // Receive remote tracks
-    pc.ontrack = (event) => {
+    pc.ontrack = async (event) => {
       const stream = event.streams[0]
       if (!audioRefs.current[remoteUid]) {
         audioRefs.current[remoteUid] = new Audio()
       }
-      audioRefs.current[remoteUid].srcObject = stream
-      audioRefs.current[remoteUid].autoplay = true
-      audioRefs.current[remoteUid].play().catch(e => console.warn('Audio play failed', e))
+      try {
+        audioRefs.current[remoteUid].srcObject = stream
+        audioRefs.current[remoteUid].autoplay = true
+        await audioRefs.current[remoteUid].play()
+      } catch (e) {
+        console.warn('[VoiceChannel] Remote audio play failed:', e.message)
+      }
     }
 
     return pc

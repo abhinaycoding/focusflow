@@ -12,6 +12,8 @@ import { TimerProvider } from './contexts/TimerContext'
 import { LanguageProvider } from './contexts/LanguageContext'
 
 
+import AudioFixer from './utils/AudioFixer'
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <LanguageProvider>
@@ -22,6 +24,7 @@ createRoot(document.getElementById('root')).render(
               <TimerProvider>
                 <ZenProvider>
                   <NotificationProvider>
+                    <AudioFixer />
                     <App />
                   </NotificationProvider>
                 </ZenProvider>
