@@ -142,7 +142,7 @@ const LeaderboardPage = ({ onNavigate }) => {
                 <div className="lb-type">{s.studentType}</div>
               </div>
               <div className="lb-score">
-                {activeTab === 'hours' ? `${s[activeTab]}h` : s[activeTab].toLocaleString()}
+                {(s[activeTab] || 0).toLocaleString()}
                 <span className="lb-score-label">
                   {activeTab === 'xp' ? ' XP' : activeTab === 'tasks' ? ' tasks' : ''}
                 </span>

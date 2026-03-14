@@ -30,37 +30,49 @@ const FriendActivityFeed = () => {
       }
 
       try {
-        const profileDocs = await Promise.all(
-          friendIds.map(uid => getDoc(doc(db, 'profiles', uid)))
-        )
+        console.log('[FriendFeed] Fetching profiles for:', friendIds)
         const profileMap = {}
-        profileDocs.forEach(d => { if (d.exists()) profileMap[d.id] = d.data() })
+        try {
+          const profileDocs = await Promise.all(
+            friendIds.map(uid => getDoc(doc(db, 'profiles', uid)))
+          )
+          profileDocs.forEach(d => { if (d.exists()) profileMap[d.id] = d.data() })
+        } catch (pErr) {
+          console.error('[FriendFeed] Profile fetch failed:', pErr.message)
+          throw pErr // rethrow to be caught by the outer catch
+        }
 
         const all = []
         const chunks = []
         for (let i = 0; i < friendIds.length; i += 10) chunks.push(friendIds.slice(i, i + 10))
 
         for (const chunk of chunks) {
-          const snap = await getDocs(query(
-            collection(db, 'activities'),
-            where('user_id', 'in', chunk),
-            orderBy('created_at', 'desc'),
-            limit(20)
-          ))
-          snap.docs.forEach(d => {
-            const act = d.data()
-            all.push({
-              id:        d.id,
-              userId:    act.user_id,
-              name:      profileMap[act.user_id]?.full_name || 'A friend',
-              photo:     profileMap[act.user_id]?.photo_url || null,
-              emoji:     profileMap[act.user_id]?.avatar_emoji || null,
-              action:    act.action,
-              detail:    act.detail,
-              timestamp: act.created_at,
-              icon:      act.icon,
+          console.log('[FriendFeed] Querying activities for chunk:', chunk)
+          try {
+            const snap = await getDocs(query(
+              collection(db, 'activities'),
+              where('user_id', 'in', chunk),
+              orderBy('created_at', 'desc'),
+              limit(20)
+            ))
+            snap.docs.forEach(d => {
+              const act = d.data()
+              all.push({
+                id:        d.id,
+                userId:    act.user_id,
+                name:      profileMap[act.user_id]?.full_name || 'A friend',
+                photo:     profileMap[act.user_id]?.photo_url || null,
+                emoji:     profileMap[act.user_id]?.avatar_emoji || null,
+                action:    act.action,
+                detail:    act.detail,
+                timestamp: act.created_at,
+                icon:      act.icon,
+              })
             })
-          })
+          } catch (qErr) {
+            console.error('[FriendFeed] Activities query failed for chunk', chunk, ':', qErr.message)
+            throw qErr
+          }
         }
 
         all.sort((a, b) => {

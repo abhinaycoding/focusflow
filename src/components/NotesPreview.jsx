@@ -47,7 +47,7 @@ const NotesPreview = ({ onNavigate }) => {
     if (hours < 24) return `${hours}${t('notes.hAgo')}`
     const days = Math.floor(hours / 24)
     if (days < 7) return `${days}${t('notes.dAgo')}`
-    return new Date(dateStr).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
+    return new Date(d).toLocaleDateString('en-IN', { month: 'short', day: 'numeric' })
   }
 
   return (

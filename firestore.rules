@@ -7,7 +7,8 @@ service cloud.firestore {
     function isAdmin() {
       return request.auth != null && (
         request.auth.token.email.toLower() == 'abhinaynachankar7@gmail.com' ||
-        get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true
+        (exists(/databases/$(database)/documents/profiles/$(request.auth.uid)) && 
+         get(/databases/$(database)/documents/profiles/$(request.auth.uid)).data.isAdmin == true)
       );
     }
     function isMember(roomId) {
@@ -189,7 +190,7 @@ service cloud.firestore {
     // ── Activities Feed ─────────────────────────────────────────────────────
     match /activities/{activityId} {
       allow read: if request.auth != null;
-      allow create: if request.auth != null && request.resource.data.user_id == request.auth.uid;
+      allow create: if request.auth != null;
       allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }
   }
