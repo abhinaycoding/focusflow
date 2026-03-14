@@ -189,7 +189,7 @@ service cloud.firestore {
 
     // ── Activities Feed ─────────────────────────────────────────────────────
     match /activities/{activityId} {
-      allow read: if request.auth != null;
+      allow read, list, get: if request.auth != null;
       allow create: if request.auth != null;
       allow update, delete: if request.auth != null && (resource.data.user_id == request.auth.uid || isAdmin());
     }

@@ -52,7 +52,7 @@ const FriendActivityFeed = () => {
             const snap = await getDocs(query(
               collection(db, 'activities'),
               where('user_id', 'in', chunk),
-              orderBy('created_at', 'desc'),
+              // orderBy('created_at', 'desc'),
               limit(20)
             ))
             snap.docs.forEach(d => {
