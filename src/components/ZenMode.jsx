@@ -206,7 +206,7 @@ const ZenMode = () => {
     </div>
   )
 
-  if (!mounted || !isZenModeActive) return null
+  if (!mounted || !isZenModeActive || !document?.body) return null
 
   return createPortal(content, document.body)
 }
